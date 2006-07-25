@@ -11,7 +11,7 @@ MODULES=gettext \
 	gettext_app \
 	iso639
 
-EBIN_FILES=$(MODULES:%=../ebin/%.$(EMULATOR)) ../ebin/gettext.app
+EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
 
 ERLC_FLAGS+=-W
 
