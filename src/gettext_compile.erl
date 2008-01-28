@@ -262,6 +262,7 @@ while(0,T,_,_) ->
     T.
 
 
+dump("", _) -> ok;
 dump(Str,L) -> 
     Fname = get(fname),
     Finfo = get_file_info(Str),
