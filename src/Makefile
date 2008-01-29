@@ -7,9 +7,10 @@ VSN=$(GETTEXT_VSN)
 MODULES=gettext \
 	gettext_compile \
 	gettext_server \
+	gettext_checker \
 	gettext_sup \
 	gettext_app \
-	iso639
+	iso639 
 
 EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
 

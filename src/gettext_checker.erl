@@ -7,70 +7,84 @@
 
 -export([dialog/0,
 	 dialog/1,
-         info/0,
+         help/0,
          get_first_key/0,
          next_non_translated/2,
          report_bug/3,
-         check_bugs/0
+         check_bugs/0,
+         display_errors/0
         ]).
 
 
 
 
 -define(TABLE_NAME, gettext_db).
--define(ROOT_DIR,"./lib/gettext/priv/lang").
+-define(ROOT_DIR, filename:join([gettext_server:gettext_dir(), "lang"])).
 -define(ENDCOL, 72).
 -define(PIVOT, 4).
 -define(SEP, $\s).
 -define(DEFAULT_LANG, "sv").
 -define(BUG_FILE, "bugs.dat").
+-define(PROMPT, '> ').
 
-info() ->
-    io:format("Module for findings errors and warnings in the gettext_db. ~n"
-	      "It recognize following situations:~n"
+help() ->
+    io:format("~nModule for findings errors and warnings in the gettext_db. ~n"
+	      "It recognize the following situations:~n~n"
  	      "  * no key found in one of the languages~n"
  	      "  * key have the same value in two languages~n"
- 	      "  * there is spaces mismatch ~n~n"
- 	      "~nUse dialog/1 function e.g gettext_checker:dialog(\"en\") to "
-	      "run the functionality~n~n"
- 	      "~nThe search is based on the two functions~n"
- 	      "  * next_non_translated(Key,Language) - get the next error or "
+ 	      "  * there is a space mismatch ~n~n"
+ 	      "Use the dialog/0 or dialog/1 functions e.g: "
+              "gettext_checker:dialog(\"en\") to start the checker~n~n"
+ 	      "The search is based on the two functions~n~n"
+ 	      "  * next_non_translated(Key, Language) - get the next error or "
 	      "warning~n"
- 	      "    it returns:  ~n[NextKey,Args,Status] where Status is atom:~n"
- 	      "       **no_key - no key in the language that we specyfied"
+ 	      "    Returns:  ~n~n"
+              "     [NextKey,Args,Status] where Status is atom:~n"
+ 	      "       + no_key - no key in the language that we specyfied"
 	      " as argument~n" 
- 	      "       **no_key_default - no key in default language~n"
- 	      "       **same_value~n"
- 	      "       **spaces_warning~n"
- 	      "       **the_end~n"
+ 	      "       + no_key_default - no key in default language~n"
+ 	      "       + same_value~n"
+ 	      "       + spaces_warning~n"
+ 	      "       + the_end~n~n"
 	      "    NextKey - a key from gettext_db in which error occurred "
-	      "(without the language information~n"
+	      "(without the language information~n~n"
 	      "    Args - additional arguments. Mainly empty list - only if there"
 	      " is space error it"
-	      "    contains:~n"
-	      "       ** 'a',char_at_beginning,char_at_the_end~n"
-	      "       ** 'b',char_at_beginning~n"
-	      "       ** 'e',char_at_end~n~n"	      
-	      "  * get_first_key() - this function is used in the begining to"
+	      "    contains:~n~n"
+	      "       + 'a',char_at_beginning,char_at_the_end~n"
+	      "       + 'b',char_at_beginning~n"
+	      "       + 'e',char_at_end~n~n"	      
+	      "  * get_first_key() - this function is used in order to"
 	      " return the first key from dets table~n",	      
 	      []).
+
+%% To be called from e.g a Makefile
+display_errors() ->
+    Lang = ["en","nb"],
+    F = fun(LC) ->
+                FirstKey = get_first_key(),
+                non_translated_stats(FirstKey, LC, 0, 0, 0)
+        end,
+    lists:foreach(F, Lang).
+
 	      
 	      
-%% function implementing dialog with the user by giving a user possibility to pick up numbers 
-%% with actions associated to them 
+%% function implementing dialog with the user by giving a user possibility 
+%% to pick up numbers with actions associated to them 
  
 dialog() ->
-    io:format("Language set to english~n", []),
-    dialog("en").
+    LC = gettext_server:default_lang(),
+    io:format("Language set to: ~s~n", [iso639:lc2lang(LC)]),
+    dialog(LC).
 
 dialog(QueryLang) ->
   
     case check_lang(QueryLang) of 
 	error ->
-	    io:format("wrong language specyfy good one or exit(x)~n", []),
+	    io:format("Wrong language! Specify a good one or exit(x)~n", []),
 	    io:format("Possible languages: ~p~n", [all_langs()]),
 		   
-	    case get_string('>') of 
+	    case get_string(?PROMPT) of 
 		"x" -> 
 		    true;
 		NewLang ->
@@ -79,36 +93,36 @@ dialog(QueryLang) ->
 	_Other ->
 	    io:format("~n"
 		      "1. check and change language~n"
-		      "2. count errors and warinings~n"
+		      "2. count errors and warnings~n"
 		      "3. choose language~n"
-		      "4. change spaces errors automaticly~n"
+		      "4. change space-errors automatically~n"
 		      "5. check reported bugs~n"
 		      "6. exit~n",
 		      []),
-	    case get_int('>') of 
+	    case get_int(?PROMPT) of 
 		{error, _Value} ->
 		    io:format("wrong option ~n"),
 		    dialog(QueryLang);
 		1 ->
-		    FirstKey=get_first_key(),		 
+		    FirstKey = get_first_key(),		 
 		    find_non_translated(FirstKey, QueryLang),
 		    dialog(QueryLang);		
 		2 ->
-		    FirstKey=get_first_key(),
+		    FirstKey = get_first_key(),
 		    non_translated_stats(FirstKey, QueryLang,0,0,0),
 		    dialog(QueryLang);
 		3 ->
 		    io:format("Possible languages: ~p~n", [all_langs()]),
-		    NewLang=get_string('>'),
+		    NewLang = get_string(?PROMPT),
 		    dialog(NewLang);
 		4 ->
-		    FirstKey=get_first_key(),
+		    FirstKey = get_first_key(),
 		    change_spaces(FirstKey, QueryLang),
 		    dialog(QueryLang);
 		5 ->
 		    check_bugs(),	       
 		    dialog(QueryLang),
-		    io:format("checking finished~n", []);
+		    io:format("check finished~n", []);
 		6->
   		    true;
 		_Num ->
@@ -123,17 +137,14 @@ check_lang("a") ->
     ok;
 
 check_lang(Lang) ->
-
     case iso639:lc2lang(Lang) of 
 	"" ->
 	    error;
 	_Other ->
-	    Fname=filename:join([?ROOT_DIR, "custom", Lang, "gettext.po"]),
-	 
+	    Fname = filename:join([?ROOT_DIR, "custom", Lang, "gettext.po"]),
 	    case filelib:is_regular(Fname) of
-		true -> ok;
-		false ->
-		    error
+		true  -> ok;
+		false -> error
 	    end	    
     end.
 
@@ -143,34 +154,34 @@ change_spaces('$end_of_table',QueryLang) ->
     dets:sync(?TABLE_NAME), 
     save_to_po_file(QueryLang,custom),
     io:format("spaces checking is finished~n",[]);
-
+%%
 change_spaces(El,QueryLang) ->
-
      case next_non_translated(El,QueryLang) of 
 	[NextKey,Key,Args,spaces_warning] ->
 	     case Args of 
 		 error ->
 		     true;
 		 _Other ->
-		     NewValue=space_auto_change(Args,Key,QueryLang),
-		     NewObj={{Key,QueryLang},NewValue},
+		     NewValue = space_auto_change(Args,Key,QueryLang),
+		     NewObj = {{Key,QueryLang},NewValue},
 		     dets:insert(?TABLE_NAME,NewObj)		     
 	     end,
 	    change_spaces(NextKey,QueryLang);
 	[NextKey,_,_,_Result ]->	    
 	    change_spaces(NextKey,QueryLang)
     end.
+
 %% function returning statistics about the number of errors and warnings    
 %% (simple counting)
-non_translated_stats('$end_of_table',_QueryLang,E,W,S) ->
-    io:format("Results:~n"
-	      "No key errors: ~p ~n"
+non_translated_stats('$end_of_table', QueryLang, E, W, S) ->
+    io:format("~n------~n"
+              "Results (~p):~n"
+	      "Num.of key errors: ~p ~n"
 	      "Same key warnings: ~p ~n"
 	      "Spaces warnings: ~p~n",
-	      [E,W,S]);
-
+	      [QueryLang, E, W, S]);
+%%
 non_translated_stats(El,QueryLang,E,W,S) ->
-
     case next_non_translated(El,QueryLang) of 
 	[NextKey,_Key,_,no_key]->
 	    non_translated_stats(NextKey,QueryLang,E+1,W,S);
@@ -191,31 +202,31 @@ find_non_translated('$end_of_table',QueryLang) ->
     dets:sync(?TABLE_NAME), 
     save_to_po_file(QueryLang,custom),
     save_to_po_file(?DEFAULT_LANG,default);
+%%
 find_non_translated(El,QueryLang) ->
-    
     case next_non_translated(El,QueryLang) of 
 	[NextKey,Key,[],no_key]->	    
 	    io:format("error: there is non translated string with key ~p "
 		      "in ~p lang:~n",
 		      [show_string(Key),QueryLang]),
-	    Res=error_action(Key,QueryLang);
+	    Res = error_action(Key,QueryLang);
 	[NextKey,Key,[],same_value] ->
 	    io:format("warning: key ~p in lang ~p have the"
 		      " same value:~n",[show_string(Key),QueryLang]),
-	    Res=warning_action(Key,QueryLang);		
+	    Res = warning_action(Key,QueryLang);		
 	[NextKey,Key,Args,spaces_warning] ->
 	    io:format("warning: key ~p in lang ~p have space "
 		      "mismatch~n",[show_string(Key),QueryLang]),
-	    Res=spaces_action(Key,QueryLang, Args);					   			
+	    Res = spaces_action(Key,QueryLang, Args);					   			
 	[NextKey,Key,[],no_key_default] ->
 	    io:format("error: there is non translated string with key ~p in deafault lang:~n",
 		      [show_string(Key)]),
-	    Res=error_action_default(Key,QueryLang);
+	    Res = error_action_default(Key,QueryLang);
 	[NextKey,_,_,the_end ]->	    
-	    Res=ok
+	    Res = ok
     end,
     if 
-	Res==ret ->
+	Res == ret ->
 	    find_non_translated('$end_of_table',QueryLang);
 	true->
 	    find_non_translated(NextKey,QueryLang)
@@ -224,21 +235,22 @@ find_non_translated(El,QueryLang) ->
 %% function returning the first key in the whole table
 %%
 get_first_key() ->
-    Key=dets:first(?TABLE_NAME),
+    Key = dets:first(?TABLE_NAME),
     Key.
 
 %% functionality for getting the new error/warning information from gettext_db
-%% it return a List - [NextKey,Key,Args,Status] - run gettext_checker:info()
+%% it return a List - [NextKey,Key,Args,Status] - run gettext_checker:help()
 %% for more informations 
 next_non_translated('$end_of_table',_QueryLang) ->
     ['$end_of_table',[],[],the_end];
+%%
 next_non_translated({Key, ?DEFAULT_LANG = Lang}, QueryLang) when is_atom(Key) ->
     NextKey = dets:next(?TABLE_NAME,{Key,Lang}),
     next_non_translated(NextKey, QueryLang);
-
+%%
 next_non_translated({Key, ?DEFAULT_LANG = Lang}, QueryLang) ->
-    NextKey=dets:next(?TABLE_NAME, {Key, Lang}),
-    Value=lookup(Key, Lang),	    
+    NextKey = dets:next(?TABLE_NAME, {Key, Lang}),
+    Value = lookup(Key, Lang),	    
     case lookup(Key, QueryLang) of
         empty ->
             [NextKey, Key, [], no_key];
@@ -248,7 +260,7 @@ next_non_translated({Key, ?DEFAULT_LANG = Lang}, QueryLang) ->
             do_check_spaces(Key, NextKey, QueryLang, 
                             RetValue, Value)					      				
     end;
-
+%%
 next_non_translated({Key, QueryLang}, QueryLang) ->
     NextKey = dets:next(?TABLE_NAME, {Key, QueryLang}),
     case lookup(Key, ?DEFAULT_LANG) of
@@ -257,7 +269,7 @@ next_non_translated({Key, QueryLang}, QueryLang) ->
         _RetValue ->
             next_non_translated(NextKey, QueryLang)
     end;
-
+%%
 next_non_translated({Key, Lang}, QueryLang) ->
     NextKey = dets:next(?TABLE_NAME,{Key,Lang}),
     next_non_translated(NextKey, QueryLang).
@@ -282,7 +294,7 @@ lookup(Key,Lang) ->
 %% function showing only first 40 chars of the string
 %% 
 show_string(String) ->
-    Len=string:len(String),
+    Len = string:len(String),
     if 
 	Len>40 ->
 	    string:left(String,40)++"...";
@@ -293,8 +305,8 @@ show_string(String) ->
 %% function that gets int from the user
 %%
 get_int(Prompt)->
-    [_NewLine | TmpValue]= lists:reverse(io:get_line(Prompt)),
-    Value=lists:reverse(TmpValue),
+    [_NewLine | TmpValue] =  lists:reverse(io:get_line(Prompt)),
+    Value = lists:reverse(TmpValue),
     case string:to_integer(Value) of
 	{error,_Reason}->
 	    {error,Value};
@@ -304,8 +316,8 @@ get_int(Prompt)->
 
 %% function that gets string from the user
 get_string(Prompt) ->
-    [_NewLine | TmpValue]= lists:reverse(io:get_line(Prompt)),
-    Value=lists:reverse(TmpValue),
+    [_NewLine | TmpValue] =  lists:reverse(io:get_line(Prompt)),
+    Value = lists:reverse(TmpValue),
     Value.
   
 %% function responsible for finding spacing errors
@@ -315,8 +327,8 @@ get_string(Prompt) ->
 check_spaces(S1,S2) when is_atom(S1) or is_atom(S2) ->
     error;
 check_spaces(S1,S2)  ->
-    Len1=string:len(S1),
-    Len2=string:len(S2),
+    Len1 = string:len(S1),
+    Len2 = string:len(S2),
     if 
 	(Len1<1) or (Len2<1) ->
 	    error;	
@@ -330,8 +342,8 @@ check_spaces(S1,S2)  ->
 %% E-end
 %% S-string  
 check_spaces_real(S1,S2) ->
-    B1=hd(S1),
-    B2=hd(S2),
+    B1 = hd(S1),
+    B2 = hd(S2),
 
     [E1 | _Rest1] = lists:reverse(S1),
     [E2 | _Rest2] = lists:reverse(S2),
@@ -356,81 +368,55 @@ check_spaces_real(S1,S2) ->
     end.
 
 %%!!!!!!!!!!!!!!!ACTIONS!!!!!!!!!!!!!!
-	 
+
+get_action() ->
+    case string:tokens(io:get_line(?PROMPT),"\s\n\t") of
+        [Action|_] -> Action;
+        _          -> ""
+    end.
+            
    
-spaces_action(Key,QueryLang,error)->
+spaces_action(Key, QueryLang, error)->
     io:format("Skip(s)~n"
 	      "Change manually(c)~n"
 	      "Look at file references(l)~n"
 	      "Return(r)~n"
 	      ,[]),
-    Action=io:get_line('>'),
-    case Action of 
-	"s\n" ->
-	    true;
-	"c\n" ->
-	    NewValue=get_string('>'),
-	    NewObj={{Key,QueryLang},NewValue},
-	    dets:insert(?TABLE_NAME,NewObj);
-	"r\n" ->
-	    ret;
-	"l\n" ->
-	    Comments = get_comments(Key),
-	    print_comments(Comments);
-	_Other ->
-	    spaces_action(Key,QueryLang,error)
-    end;
-
-spaces_action(Key,QueryLang,Args)->
+    Action = get_action(),
+    action(Action, Key, QueryLang, spaces, error);
+%%
+spaces_action(Key, QueryLang, Args)->
     io:format("Skip(s)~n"
 	      "ChangeAutomaticly(a)~n"
 	      "Change manually(c)~n"
 	      "Look at file references(l)~n"
 	      "Return(r)~n",[]
 		      ),
-    Action=io:get_line('>'),
-    case Action of 
-	"s\n" ->
-	    true;
-	"c\n" ->
-	    NewValue=get_string('>'),
-	    NewObj={{Key,QueryLang},NewValue},
-	    dets:insert(?TABLE_NAME,NewObj);
-	"r\n" ->
-	    ret;
-	"a\n" ->
-	    NewValue=space_auto_change(Args,Key,QueryLang),
-	    NewObj={{Key,QueryLang},NewValue},
-	    dets:insert(?TABLE_NAME,NewObj);
-	"l\n" ->
-	    Comments = get_comments(Key),
-	    print_comments(Comments);	
-	_Other ->
-	    spaces_action(Key,QueryLang,Args)
-    end.
+    Action = get_action(),
+    action(Action, Key, QueryLang, spaces, Args).
 
 %% automaticly change the string so there is no space error
 %%
-space_auto_change([a | Arg],Key,QueryLang) ->
-    Value=lookup(Key,QueryLang),
-    [B1,E1]=Arg,
+space_auto_change([a | Arg], Key, QueryLang) ->
+    Value = lookup(Key,QueryLang),
+    [B1,E1] = Arg,
     if 
 	(B1==$\s) , (E1==$\s) ->
 	    NewValue=" " ++Value++" ";
 	B1==$\s ->
-	    [_End | TmpValue]=lists:reverse(Value),
-	    NewValue=" " ++lists:reverse(TmpValue);
+	    [_End | TmpValue] = lists:reverse(Value),
+	    NewValue = " " ++lists:reverse(TmpValue);
 	E1==$\s ->
-	    [_End | TmpValue] =Value,
-	    NewValue=TmpValue ++ " ";
+	    [_End | TmpValue]  = Value,
+	    NewValue = TmpValue ++ " ";
 	true ->
-	    [_Begin | TmpValue1]= Value,
-	    [_End | TmpValue2]=lists:reverse(TmpValue1),
-	    NewValue= lists:reverse(TmpValue2)		    
+	    [_Begin | TmpValue1] =  Value,
+	    [_End | TmpValue2] = lists:reverse(TmpValue1),
+	    NewValue =  lists:reverse(TmpValue2)		    
     end,
     NewValue;
-space_auto_change([b ,B1],Key,QueryLang) ->
-    Value=lookup(Key,QueryLang),
+space_auto_change([b ,B1], Key, QueryLang) ->
+    Value = lookup(Key,QueryLang),
     if 
 	B1==$\s ->
 	    NewValue=" " ++ Value;		
@@ -439,14 +425,14 @@ space_auto_change([b ,B1],Key,QueryLang) ->
 	    [_End| NewValue] = Value       	    
     end,
     NewValue;
-space_auto_change([e ,E1],Key,QueryLang) ->
-    Value=lookup(Key,QueryLang),
+space_auto_change([e ,E1], Key, QueryLang) ->
+    Value = lookup(Key,QueryLang),
     if
 	E1==$\s ->
-	    NewValue=Value++ " ";
+	    NewValue = Value++ " ";
 	true ->
 	    [_End| TmpValue] = lists:reverse(Value),
-	    NewValue= lists:reverse(TmpValue)
+	    NewValue =  lists:reverse(TmpValue)
     end,
     NewValue.
 
@@ -458,22 +444,8 @@ warning_action (Key,QueryLang) ->
 	      "Look at file references(l)~n"
 	      "Return(r)~n",[]
 	     ),
-    Action=io:get_line('>'),
-    case Action of 
-	"s\n" ->
-	    true;
-	"r\n" ->
-	    ret;
-	"c\n" ->
-	    NewValue=get_string('>'),
-	    NewObj={{Key,QueryLang},NewValue},
-	    dets:insert(?TABLE_NAME,NewObj);	
-	"l\n" ->
-	    Comments = get_comments(Key),
-	    print_comments(Comments);
-	_Other ->
-	    warning_action(Key,QueryLang)
-    end.
+    Action = get_action(),
+    action(Action, Key, QueryLang, warning, undefined).
 
 %% error action for default language - it is used when there is
 %% no key in default language
@@ -484,63 +456,76 @@ error_action_default(Key,QueryLang) ->
 	      "Delete(d)~n"
 	      "Look at file references(l)~n"
 	      "Return(r)~n",[]),
-    Action=io:get_line('>'),
-    case Action of 
-	"s\n" ->
-	    true;
-	"r\n" ->
-	    ret;
-	"a\n" ->
-	    NewValue=get_string('New Value>'),
-	    NewObj={{Key,?DEFAULT_LANG},NewValue},
-	    dets:insert(?TABLE_NAME,NewObj);
- 	"d\n" ->
-	    dets:delete(?TABLE_NAME,{Key,QueryLang}); 
-	"l\n" ->
-	    Comments = get_comments(Key),
-	    print_comments(Comments);
-	_Other ->
-	    error_action_default(Key,QueryLang)
-    end.
+    Action = get_action(),
+    action(Action, Key, QueryLang, error, default).
 
-%% error action used when there is no key in specyfied language
+%% error action used when there is no key in specified language
 %% (QueryLang)
-error_action (Key,QueryLang) ->
+error_action(Key,QueryLang) ->
     io:format("Skip(s)~n"
 	      "AddValue(a)~n"
 	      "Look at file references(l)~n"
 	      "Return(r)~n",[]),
-    Action=io:get_line('>'),
-    case Action of 
-	"s\n" ->
-	    true;
-	"r\n" ->
-	    ret;
-	"a\n" ->
-	    Similar=find_similar(Key,QueryLang),
-	    print_possibilities(Similar,no_key),
-	    
-	    case get_int('New Value>') of
-		{error,NewValue}->
-		    NewObj={{Key,QueryLang},NewValue},
-		    dets:insert(?TABLE_NAME,NewObj); 
-		Num->
-		    if Num =<length(Similar) ->
-			    {ChosenKey,Val}=lists:nth(Num,Similar),
-			    dets:delete(?TABLE_NAME,{ChosenKey,QueryLang}),
-			    NewObj={{Key,QueryLang},Val},
-			    dets:insert(?TABLE_NAME,NewObj); 
-		       true ->
-			    io:format("wrong value~n"),
-			    error_action(Key,QueryLang)			   
-		    end
-	    end;
-	"l\n" ->
-	    Comments = get_comments(Key),
-	    print_comments(Comments);
-	_Other ->
-	    error_action(Key,QueryLang)
-    end.
+    Action = get_action(),
+    action(Action, Key, QueryLang, error, no_key).
+
+
+%%
+%% Action matrix.
+%%
+action("s", _, _, _, _)   -> true;
+action("r", _, _, _, _)   -> ret;
+action("l", Key, _, _, _) -> print_comments(get_comments(Key));
+%%
+action("a", Key, QLang, error, no_key) ->
+    Similar = find_similar(Key, QLang),
+    print_possibilities(Similar, no_key),
+    case get_int('New Value> ') of
+        {error,NewValue}->
+            NewObj = {{Key, QLang}, NewValue},
+            dets:insert(?TABLE_NAME, NewObj); 
+        Num->
+            if Num =< length(Similar) ->
+                    {ChosenKey, Val} = lists:nth(Num, Similar),
+                    dets:delete(?TABLE_NAME, {ChosenKey, QLang}),
+                    NewObj = {{Key, QLang}, Val},
+                    dets:insert(?TABLE_NAME, NewObj); 
+               true ->
+                    io:format("wrong value~n"),
+                    error_action(Key, QLang)			   
+            end
+    end;
+action(_, Key, QLang, error, no_key) -> 
+    error_action(Key, QLang);
+%%
+action("a", Key, _, error, default) ->
+    NewValue = get_string('New Value> '),
+    NewObj = {{Key, ?DEFAULT_LANG}, NewValue},
+    dets:insert(?TABLE_NAME, NewObj);
+action("d", Key, QLang, error, default) ->
+    dets:delete(?TABLE_NAME, {Key, QLang}); 
+action(_, Key, QLang, error, default) ->
+    error_action_default(Key,QLang);
+%%
+action("c", Key, QLang, warning, _) ->
+    NewValue = get_string(?PROMPT),
+    NewObj = {{Key, QLang}, NewValue},
+    dets:insert(?TABLE_NAME, NewObj);	
+action(_, Key, QLang, warning, _) ->
+    warning_action(Key, QLang);
+%%
+%%
+action("c", Key, QLang, spaces, _) ->
+    NewValue = get_string(?PROMPT),
+    NewObj = {{Key, QLang}, NewValue},
+    dets:insert(?TABLE_NAME, NewObj);	
+action("a", Key, QLang, spaces, Args) ->
+    NewValue = space_auto_change(Args, Key, QLang),
+    NewObj = {{Key, QLang}, NewValue},
+    dets:insert(?TABLE_NAME, NewObj);
+action(_, Key, QLang, spaces, X) ->
+    spaces_action(Key, QLang, X).
+
 
 print_comments([]) ->
     true;
@@ -557,8 +542,8 @@ print_possibilities([],_Other) ->
 print_possibilities(List,no_key) ->
     io:format("possible values:~n",[]),
     F = fun(X,Acc) ->
-		{_Key,Val}=X,				
-		String =Acc++". "++show_string(Val)++"~n",
+		{_Key,Val} = X,				
+		String  = Acc++". "++show_string(Val)++"~n",
 		io:format("~p~n",[String]),
 		Acc+1
 	end,
@@ -566,9 +551,9 @@ print_possibilities(List,no_key) ->
 print_possibilities(List,_Other) ->
     io:format("possible values:~n",[]),
     F = fun(X,Acc) ->
-		{Key,Val}=X,
+		{Key,Val} = X,
 		
-		String =Acc++". Key:"++show_string(Key)++" Val:"++show_string(Val)++"~n",
+		String  = Acc++". Key:"++show_string(Key)++" Val:"++show_string(Val)++"~n",
 		io:format("~p~n",[String]),
 		Acc+1
 	end,
@@ -580,8 +565,8 @@ print_possibilities(List,_Other) ->
 %% compare function
 %%	    
 find_similar(Key,Lang)->
-    Strings=dets:match(?TABLE_NAME, {{'$1',Lang},'$2'}),
-    F=fun([SKey,SVal],Acc) -> 
+    Strings = dets:match(?TABLE_NAME, {{'$1',Lang},'$2'}),
+    F = fun([SKey,SVal],Acc) -> 
 	      case compare(SKey,Key) of 
 		  true ->
 		      case lookup(SKey,?DEFAULT_LANG) of 
@@ -605,9 +590,9 @@ compare(S1,S2) when not is_list(S1) or not is_list(S2) ->
     false;
 
 compare(S1,S2) ->
-    Len1=string:len(S1),
+    Len1 = string:len(S1),
     
-    LevenDis =dist(S1,S2),
+    LevenDis  = dist(S1,S2),
     if 
  	Len1>20 ->
  	    if 
@@ -663,7 +648,7 @@ min(A,B,C) ->
 %% get comments for the specyfied key from the default language .po file
 %%
 get_comments(Key)  ->
-    [_Header |FileCommentsQuery]=parse_po_comment(filename:join([?ROOT_DIR,
+    [_Header |FileCommentsQuery] = parse_po_comment(filename:join([?ROOT_DIR,
 								 "custom",
 								 "en",
 								 "gettext.po"])),
@@ -682,14 +667,14 @@ get_comments(Key)  ->
 %% to the file
 %% 
 save_to_po_file(QueryLang,Kind) ->
-    FilePath=prepare_file(QueryLang,Kind),
-    [Header |FileCommentsQuery]=parse_po_comment(FilePath),
-    ValQuery=dets:match_object(?TABLE_NAME,{{'_',QueryLang},'_'}),
-    SFileCommentsQuery=lists:keysort(1,FileCommentsQuery),
-    SValQuery=lists:keysort(1,convert_val_query(ValQuery,[])),
-    WholeQuery=two_to_one_merge(SValQuery,SFileCommentsQuery,[]),
+    FilePath = prepare_file(QueryLang,Kind),
+    [Header |FileCommentsQuery] = parse_po_comment(FilePath),
+    ValQuery = dets:match_object(?TABLE_NAME,{{'_',QueryLang},'_'}),
+    SFileCommentsQuery = lists:keysort(1,FileCommentsQuery),
+    SValQuery = lists:keysort(1,convert_val_query(ValQuery,[])),
+    WholeQuery = two_to_one_merge(SValQuery,SFileCommentsQuery,[]),
     
-    {ok,Fd}=file:open(FilePath,[write]),
+    {ok,Fd} = file:open(FilePath,[write]),
     write_header(Fd,Header),
     write_entries(WholeQuery,Fd),
     file:close(Fd).
@@ -697,12 +682,12 @@ save_to_po_file(QueryLang,Kind) ->
 %% gets full path to the gettext file
 %%
 prepare_file(QueryLang,default) ->
-    Fname=filename:join([?ROOT_DIR,"default",QueryLang,"gettext.po"]),
+    Fname = filename:join([?ROOT_DIR,"default",QueryLang,"gettext.po"]),
     filelib:ensure_dir(Fname),    
     Fname;
 
 prepare_file(QueryLang,custom) ->
-    Fname=filename:join([?ROOT_DIR,"custom",QueryLang,"gettext.po"]),
+    Fname = filename:join([?ROOT_DIR,"custom",QueryLang,"gettext.po"]),
     filelib:ensure_dir(Fname),    
     Fname.
 
@@ -859,11 +844,11 @@ parse_po_file_comment("msgid" ++ T,FileList) ->
 	   
 	    [{Key,Val} | parse_po_file_comment(Rest,[])];
 	true ->
-	    RevList=lists:reverse(FileList),
+	    RevList = lists:reverse(FileList),
 	    [{Key,RevList} | parse_po_file_comment(Rest,[])]
     end;
 parse_po_file_comment("#"++ T,FileList) ->
-    {Val,RO}=get_po_comment(T,[]),
+    {Val,RO} = get_po_comment(T,[]),
     parse_po_file_comment(RO,[Val | FileList]);
 parse_po_file_comment([_ | T],FileList) ->
     parse_po_file_comment(T,FileList);
@@ -917,18 +902,18 @@ to_list(L) when list(L)    -> L.
 %% ROOT_DIR 
 %%
 report_bug(ActualValue,ProperValue,Lang) ->
-    FileName=filename:join([?ROOT_DIR,?BUG_FILE]),
+    FileName = filename:join([?ROOT_DIR,?BUG_FILE]),
     case dets:open_file(bugs,[{file,FileName}]) of
 	{ok,bugs} ->
 	    case dets:insert(bugs,{ActualValue,{ProperValue,Lang}}) of
 		ok ->
-		    Res={ok,"New bug reported"}; 
+		    Res = {ok,"New bug reported"}; 
 		{error,_} ->
-		    Res={error,"Problem with inserting message"}
+		    Res = {error,"Problem with inserting message"}
 	    end;
 	{error,_} ->
 	    
-	    Res={error,"Problem with inserting message"}
+	    Res = {error,"Problem with inserting message"}
     end,
     dets:sync(bugs),
     dets:close(bugs),
@@ -937,8 +922,8 @@ report_bug(ActualValue,ProperValue,Lang) ->
 %% go thought all the reported bugs with the dets:traverse function and 
 %% asks what to do witch them bu using the check_bug_action function
 check_bugs() ->	       
-    FileName=filename:join([?ROOT_DIR,?BUG_FILE]),
-    F=fun({ActualValue,{ProperValue,Lang}}) ->
+    FileName = filename:join([?ROOT_DIR,?BUG_FILE]),
+    F = fun({ActualValue,{ProperValue,Lang}}) ->
 	      case check_bug_action(ActualValue,ProperValue,Lang) of 
 		  ok ->
 		      continue;
@@ -956,7 +941,7 @@ check_bugs() ->
     Save = fun(X)->
 		save_to_po_file(X,custom)
 	end,
-    Langs=all_langs(),
+    Langs = all_langs(),
     lists:foreach(Save,Langs),
     dets:sync(bugs),
     dets:close(bugs),
@@ -965,8 +950,8 @@ check_bugs() ->
 %% find similar entries in the gettext database it is looking 
 %% by checking the similarity of the dets values (not keys)
 find_similar_by_value(Val,Lang)->
-    Strings=dets:match(?TABLE_NAME, {{'$1',Lang},'$2'}),
-    F=fun([SKey,SVal],Acc) -> 
+    Strings = dets:match(?TABLE_NAME, {{'$1',Lang},'$2'}),
+    F = fun([SKey,SVal],Acc) -> 
 	      case compare(Val,SVal) of 
 		  true ->		      
 		      [{SKey,SVal} | Acc];	 
@@ -991,18 +976,18 @@ check_bug_action(ActualValue,ProperValue,Lang) ->
 	      "AddValue(a)~n"
 	      "Ignore(i)~n"
 	      "Return(r)~n",[]),
-    Action=io:get_line('>'),
+    Action = io:get_line(?PROMPT),
     case Action of 
 	"s\n" ->
 	    ok;
 	"r\n" ->
 	    ret;
 	"a\n" ->
-	    Similar=find_similar_by_value(ActualValue,Lang),
+	    Similar = find_similar_by_value(ActualValue,Lang),
 	    print_possibilities(Similar,with_key),
      
-	    NewKey=get_new_key(Similar),
-	    NewValue=get_new_value(Similar,ProperValue), 
+	    NewKey = get_new_key(Similar),
+	    NewValue = get_new_value(Similar,ProperValue), 
 	    dets:insert(?TABLE_NAME,{{NewKey,Lang},NewValue}),
 	    dets:delete(bugs,ActualValue),
 	    ok;
@@ -1025,7 +1010,7 @@ get_new_key(Similar) ->
 	Num ->	    
 	    if 
 		Num =<length(Similar) ->
-		    {NewKey,_Val}=lists:nth(Num,Similar),
+		    {NewKey,_Val} = lists:nth(Num,Similar),
 		    NewKey;
 		true ->
 		    io:format("wrong value~n"),
@@ -1046,7 +1031,7 @@ get_new_value(Similar,ProperVal) ->
 	Num ->	    
 	    if 
 		Num =<length(Similar) ->
-		    {_NewKey,NewVal}=lists:nth(Num,Similar),
+		    {_NewKey,NewVal} = lists:nth(Num,Similar),
 		    NewVal;
 		true ->
 		    io:format("wrong value~n"),
@@ -1058,14 +1043,16 @@ get_new_value(Similar,ProperVal) ->
 %% This function returns all languages that are in the system basing on the 
 %% content of the ../gettext/priv/lang directory   
 all_langs() ->
-    CustomPath=filename:join(?ROOT_DIR,"custom"),
-    {ok,AllCustom}=file:list_dir(CustomPath),    
-    DirList = [ X || X<-AllCustom,
-		     filelib:is_dir(filename:join(CustomPath,X))==true],
-    LangList = [ X || X<-DirList,
-		     filelib:is_regular(filename:join(CustomPath,X)++
-					"/gettext.po")==true],
-    LangList. 
+    gettext_server:all_lang() -- [gettext_server:default_lang()].
+
+%%    CustomPath = filename:join(?ROOT_DIR,"custom"),
+%%    {ok,AllCustom} = file:list_dir(CustomPath),    
+%%    DirList = [ X || X<-AllCustom,
+%%		     filelib:is_dir(filename:join(CustomPath,X))==true],
+%%    LangList = [ X || X<-DirList,
+%%		     filelib:is_regular(filename:join(CustomPath,X)++
+%%					"/gettext.po")==ntrue],
+%%    LangList. 
 
    
 

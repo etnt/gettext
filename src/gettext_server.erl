@@ -15,7 +15,10 @@
 %% External exports
 -export([start/0, start_link/0, start/1, start_link/1, key2str/2,
 	 store_pofile/2, all_lang/0, lang2cset/1, recreate_db/0,
-	 reload_custom_lang/1, unload_custom_lang/1]).
+	 reload_custom_lang/1, unload_custom_lang/1
+         ,gettext_dir/0
+         ,default_lang/0
+        ]).
 
 %% Default callback functions
 -export([custom_dir/0]).
@@ -38,7 +41,8 @@
 -record(state, {
 	  cbmod = ?MODULE,   % callback module
 	  cache = [],        % list_of( #cache{} )
-	  gettext_dir        % Dir where all the data are stored
+	  gettext_dir,       % Dir where all the data are stored
+          def_lang = ?DEFAULT_LANG
 	 }).
 
 %%%
@@ -86,6 +90,12 @@ unload_custom_lang(Lang) ->
 recreate_db() ->
     gen_server:call(?SERVER, recreate_db, infinity).
 
+gettext_dir() ->
+    gen_server:call(?SERVER, gettext_dir, infinity).
+
+default_lang() ->
+    gen_server:call(?SERVER, default_lang, infinity).
+
 all_lang() ->    
     L = dets:match(gettext_db, {{header_info, '$1'}, '_'}),
     [hd(X) || X <- L].
@@ -105,10 +115,13 @@ all_lang() ->
 init(CallBackMod0) ->
     CallBackMod = get_callback_mod(CallBackMod0),
     GettextDir = get_gettext_dir(CallBackMod),
+    DefLang = get_default_lang(CallBackMod),
     Cache = create_db(GettextDir),
     {ok, #state{cache       = Cache, 
 		cbmod       = CallBackMod,
-		gettext_dir = GettextDir}}.
+		gettext_dir = GettextDir,
+                def_lang    = DefLang
+               }}.
 
 %%%
 %%% The GETTEXT_CBMOD environment variable takes precedence!
@@ -126,11 +139,33 @@ get_callback_mod(CallBackMod0) ->
 get_gettext_dir(CallBackMod) ->
     case os:getenv("GETTEXT_DIR") of
 	false -> 
-	    case catch CallBackMod:gettext_dir() of
-		Dir when list(Dir) -> Dir;
-		_                  -> code:priv_dir(gettext) % fallback
-	    end;
-	Dir   -> Dir
+            if (CallBackMod /= ?MODULE) ->
+                    case catch CallBackMod:gettext_dir() of
+                        Dir when list(Dir) -> Dir;
+                        _                  -> code:priv_dir(gettext) % fallback
+                    end;
+               true -> 
+                    code:priv_dir(gettext) % fallback
+            end;
+	Dir -> Dir
+    end.
+
+%%%
+%%% The GETTEXT_DIR environment variable takes precedence!
+%%% Next we will try to get hold of the value from the callback.
+%%%
+get_default_lang(CallBackMod) ->
+    case os:getenv("GETTEXT_DEF_LANG") of
+	false -> 
+            if (CallBackMod /= ?MODULE) ->
+                    case catch CallBackMod:gettext_def_lang() of
+                        Dir when list(Dir) -> Dir;
+                        _                  -> ?DEFAULT_LANG % fallback
+                    end;
+               true ->
+                    ?DEFAULT_LANG % fallback
+            end;
+	DefLang -> DefLang
     end.
 
 %% Default callback function
@@ -185,7 +220,13 @@ handle_call(recreate_db, _From, State) ->
     dets:close(?TABLE_NAME),
     file:delete(Fname),
     create_db(GettextDir, Fname),
-    {reply, ok, State}.
+    {reply, ok, State};
+%%
+handle_call(gettext_dir, _From, State) ->
+    {reply, State#state.gettext_dir, State};
+%%
+handle_call(default_lang, _From, State) ->
+    {reply, State#state.def_lang, State}.
 
 	    
 

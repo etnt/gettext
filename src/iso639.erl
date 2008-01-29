@@ -993,7 +993,7 @@ lc2lang("yo") -> "Yoruba";
 lc2lang("za") -> "Zhuang";
 lc2lang("zh") -> "Chinese";
 lc2lang("zu") -> "Zulu";
-lc2lang("")   -> "".
+lc2lang(_)    -> "".
 
 
 all2lang() ->
