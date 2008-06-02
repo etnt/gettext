@@ -34,6 +34,7 @@
 
 -define(SERVER, ?MODULE).
 -define(TABLE_NAME, gettext_db).
+-define(ETS_TABLE_NAME, gettext_db_ets).
 -define(KEY(Lang,Key), {Key,Lang}).
 -define(ENTRY(Lang, Key, Val), {?KEY(Lang,Key), Val}).
 
@@ -73,7 +74,15 @@ start(CallBackMod) ->
     gen_server:start({local, ?SERVER}, ?MODULE, CallBackMod, []).
 
 key2str(Key, Lang) ->
-    gen_server:call(?SERVER, {key2str, Key, Lang}, infinity).
+    try
+        case ets:lookup(?ETS_TABLE_NAME, ?KEY(Lang, Key)) of
+            []          -> Key;  
+            [{_,Str}|_] -> Str
+        end
+    catch
+        _:_ ->
+            gen_server:call(?SERVER, {key2str, Key, Lang}, infinity)
+    end.
 
 lang2cset(Lang) ->
     gen_server:call(?SERVER, {lang2cset, Lang}, infinity).
@@ -284,6 +293,7 @@ do_unload_custom_lang(GettextDir, Lang) ->
     case filelib:is_file(Fname) of
 	true ->
 	    dets:match_delete(gettext_db, {{'_',Lang},'_'}),
+            recreate_ets_table(),
 	    ok;
 	false ->
 	    {error, "no lang"}
@@ -294,6 +304,7 @@ do_reload_custom_lang(GettextDir, Lang) ->
     Dir = filename:join([GettextDir, "lang", "custom", Lang]),
     Fname = filename:join([Dir, "gettext.po"]), 
     insert_po_file(Lang, Fname),
+    recreate_ets_table(),
     ok.
 
 do_store_pofile(Lang, File, GettextDir, Cache) ->
@@ -369,7 +380,9 @@ create_cache() ->
 			[#cache{language = LC, charset = CS}|Acc]
 		end
 	end,
+    recreate_ets_table(),
     lists:foldl(F, [], all_lang()).
+    
 
 
 create_and_populate(GettextDir, TableFile) ->
@@ -383,7 +396,27 @@ create_and_populate(GettextDir, TableFile) ->
     L = populate_db(GettextDir),
     dets:close(?TABLE_NAME),    % flush to disk
     {ok, _} = dets:open_file(?TABLE_NAME, [{file, TableFile}]),
+    recreate_ets_table(),
     L.
+
+recreate_ets_table() ->
+    try ets:delete(?ETS_TABLE_NAME) 
+    catch _:_ -> true
+    after
+        create_and_populate_ets_table()
+    end.
+
+%% To speed up the read access 10-100 times !!
+create_and_populate_ets_table() ->
+    try 
+        ets:new(?ETS_TABLE_NAME, [set, named_table, protected]),
+        ets:from_dets(?ETS_TABLE_NAME, ?TABLE_NAME),
+        true
+    catch 
+            _:_ -> false
+    end.
+            
+        
 
 open_dets_file(Tname, Fname) ->
     Opts = [{file, Fname}, {repair, false}],
