@@ -35,13 +35,12 @@ epot2po() ->
     close_file(),
     init:stop().
 
-
 write_entries(L) ->
     Fd = get(fd),
-    F = fun({Id,Finfo}) ->
-		Fi = fmt_fileinfo(Finfo),
-		io:format(Fd, "~n#: ~s~n", [Fi]),
-		file:write(Fd, "msgid \"\"\n"),
+    F = fun({Id,_Finfo}) ->
+		%%Fi = fmt_fileinfo(Finfo),
+		%%io:format(Fd, "~n#: ~s~n", [Fi]),
+		file:write(Fd, "\nmsgid \"\"\n"),
 		write_pretty(Id),
 		file:write(Fd, "msgstr \"\"\n"),
 		write_pretty(Id)
@@ -132,16 +131,12 @@ split_string([H|T], End, N, Acc) when N < End ->
 split_string([], _End, _N, Acc) ->
     {lists:reverse(Acc), []}.
     
+%%%fmt_fileinfo(Finfo) ->
+%%%    F = fun({Fname,LineNo}, Acc) ->
+%%%		Fname ++ ":" ++ to_list(LineNo) ++ [$\s|Acc]
+%%%	end,
+%%%    lists:foldr(F,[],Finfo).
 
-
-fmt_fileinfo(Finfo) ->
-    F = fun({Fname,LineNo}, Acc) ->
-		Fname ++ ":" ++ to_list(LineNo) ++ [$\s|Acc]
-	end,
-    lists:foldr(F,[],Finfo).
-		
-
-   
 write_header() ->
     io:format(get(fd),
 	      "# SOME DESCRIPTIVE TITLE.\n"
