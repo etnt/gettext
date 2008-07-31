@@ -41,10 +41,28 @@ key2str(Key, "a") ->
 key2str(Key, Lang) -> 
     gettext_server:key2str(Key, Lang).
 
+
+%%% -------------------------------------------------------------------
+%%% Function name: 
+%%% a_language
+%%% Function Use:
+%%% A special function to convert all strings in a po-file to a's Used
+%%% to check what text has been textified and what hasn't been
+%%% textified. Also converts numbers to b's instead.  The intended
+%%% language ISO to be used is ISO/IEC 8859-1 (Latin-1)
+%%% The check in the last clause: the intervals 
+%%% 1. Hd > 64 andalso Hd < 91   = Uppercase Alpha numerical characters
+%%% 2. Hd > 96 andalso Hd < 123  = Lowercase Alpha numerical characters
+%%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. å)
+%%% 3. Hd > 47 andalso Hd < 58   = Numbers
+%%% sees to that only Alphanumerical characters is replaced, to keep 
+%%% special characters, so that the context will remain to a higher 
+%%% degree.
+%%% -------------------------------------------------------------------
 a_language([], Acc) ->
     lists:reverse(Acc);
 a_language([$<|Tl] = Key, Acc) ->
-    {RestKey, Html} = look_for_special(Key, [], $<),
+    {RestKey, Html} = search_for(Key, [], $<),
     a_language(RestKey, Html++Acc);
 a_language([$\s = Hd |Tl], Acc) ->
     a_language(Tl, [Hd|Acc]);
@@ -52,30 +70,40 @@ a_language([$~ = Hd |Tl], Acc) ->
     [Hd2|Tl2] = Tl, 
     a_language(Tl2, [Hd2, $~ |Acc]);
 a_language([$$|Tl] = Key, Acc) ->
-    {RestKey, DollarFormat} = look_for_special(Tl, [], $$),
+    {RestKey, DollarFormat} = search_for(Tl, [], $$),
     a_language(RestKey, DollarFormat++[$$|Acc]);
 a_language([Hd|Tl] = Key, Acc) ->
-    if
-	Hd > 64 andalso Hd < 91 ->
-	    a_language(Tl, [$a |Acc]);
-	Hd > 96 andalso Hd < 123 ->
-	    a_language(Tl, [$a |Acc]);
-	Hd > 47 andalso Hd < 58 ->
-	    a_language(Tl, [$b |Acc]);
-	Hd > 191 ->
-	    a_language(Tl, [$a |Acc]);
-	true ->
-	    a_language(Tl, [Hd |Acc])
-    end.
+    Char = if
+	    (Hd > 64 andalso Hd < 91) orelse  % See function spec above (1.)
+	    (Hd > 96 andalso Hd < 123) orelse % See function spec above (2.) 
+	    (Hd > 191 andalso Hd < 256) ->    % See function spec above (3.)
+		$a;
+	    Hd > 47 andalso Hd < 58 ->
+		$b;
+	    true ->
+		Hd
+	end,
+    a_language(Tl, [Char |Acc]).
 
-look_for_special([], Acc, ToLookFor) ->
+%%% -------------------------------------------------------------------
+%%% Function name: 
+%%% search_for
+%%% Function Use:
+%%% A functtion, used as a help the function to a_language. It's mostly 
+%%% to be used to look for html so that links and html formatting 
+%%% doesn't break when trying to converting strings to a's. The html are
+%%% detected by matching for < and > and passes that text-chunk on to
+%%% a_language and then a_language does it's magic and continues
+%%% working on the rest of the string.
+%%% --------------------------------------------------------------------
+search_for([], Acc, ToLookFor) ->
     {Acc, []};
-look_for_special([Hd|Tl] = Key, Acc, ToLookFor) ->
+search_for([Hd|Tl] = Key, Acc, ToLookFor) ->
     case Hd of
 	ToLookFor ->
 	    {Tl, [Hd|Acc]};
 	_ ->
-	    look_for_special(Tl, [Hd|Acc], ToLookFor)
+	    search_for(Tl, [Hd|Acc], ToLookFor)
     end.
     
 
