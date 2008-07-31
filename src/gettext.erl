@@ -34,11 +34,50 @@ recreate_db() ->
 %%% Hopefully, the surrounding code has done its job and
 %%% put the language to be used in the process dictionary.
 key2str(Key) -> 
-    gettext_server:key2str(Key, get(gettext_language)).
+    key2str(Key, get(gettext_language)).
 
+key2str(Key, "a") -> 
+    a_language(Key, "");
 key2str(Key, Lang) -> 
     gettext_server:key2str(Key, Lang).
 
+a_language([], Acc) ->
+    lists:reverse(Acc);
+a_language([$<|Tl] = Key, Acc) ->
+    {RestKey, Html} = look_for_special(Key, [], $<),
+    a_language(RestKey, Html++Acc);
+a_language([$\s = Hd |Tl], Acc) ->
+    a_language(Tl, [Hd|Acc]);
+a_language([$~ = Hd |Tl], Acc) ->
+    [Hd2|Tl2] = Tl, 
+    a_language(Tl2, [Hd2, $~ |Acc]);
+a_language([$$|Tl] = Key, Acc) ->
+    {RestKey, DollarFormat} = look_for_special(Tl, [], $$),
+    a_language(RestKey, DollarFormat++[$$|Acc]);
+a_language([Hd|Tl] = Key, Acc) ->
+    if
+	Hd > 64 andalso Hd < 91 ->
+	    a_language(Tl, [$a |Acc]);
+	Hd > 96 andalso Hd < 123 ->
+	    a_language(Tl, [$a |Acc]);
+	Hd > 47 andalso Hd < 58 ->
+	    a_language(Tl, [$b |Acc]);
+	Hd > 191 ->
+	    a_language(Tl, [$a |Acc]);
+	true ->
+	    a_language(Tl, [Hd |Acc])
+    end.
+
+look_for_special([], Acc, ToLookFor) ->
+    {Acc, []};
+look_for_special([Hd|Tl] = Key, Acc, ToLookFor) ->
+    case Hd of
+	ToLookFor ->
+	    {Tl, [Hd|Acc]};
+	_ ->
+	    look_for_special(Tl, [Hd|Acc], ToLookFor)
+    end.
+    
 
 %%% --------------------------------------------------------------------
 %%% In case the string is used in a javascript context,
@@ -91,7 +130,7 @@ get_po_string([$\s|T]) -> get_po_string(T);
 get_po_string([$\r|T]) -> get_po_string(T);
 get_po_string([$\n|T]) -> get_po_string(T);
 get_po_string([$\t|T]) -> get_po_string(T);
-get_po_string([$"|T])  -> header_info(eat_string(T)).
+get_po_string([$"|T])  -> header_info(eat_string(T)).       %"make emacs happy
 
 %%% only header-info has empty po-string !
 header_info({"",R}) -> {?GETTEXT_HEADER_INFO, R};  
@@ -103,14 +142,14 @@ eat_string(S) ->
 eat_string([$\\,$"|T], Acc)   -> eat_string(T, [$"|Acc]);   % unescape !
 eat_string([$\\,$\\ |T], Acc) -> eat_string(T, [$\\|Acc]);  % unescape !
 eat_string([$\\,$n |T], Acc)  -> eat_string(T, [$\n|Acc]);  % unescape !
-eat_string([$"|T], Acc)       -> eat_more(T,Acc);
+eat_string([$"|T], Acc)       -> eat_more(T,Acc);           %"make emacs happy
 eat_string([H|T], Acc)        -> eat_string(T, [H|Acc]).
 
 eat_more([$\s|T], Acc) -> eat_more(T, Acc);
 eat_more([$\n|T], Acc) -> eat_more(T, Acc);
 eat_more([$\r|T], Acc) -> eat_more(T, Acc);
 eat_more([$\t|T], Acc) -> eat_more(T, Acc);
-eat_more([$"|T], Acc)  -> eat_string(T, Acc);
+eat_more([$"|T], Acc)  -> eat_string(T, Acc);               %"make emacs happy
 eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
 

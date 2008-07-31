@@ -40,7 +40,7 @@ help() ->
 	      "warning~n"
  	      "    Returns:  ~n~n"
               "     [NextKey,Args,Status] where Status is atom:~n"
- 	      "       + no_key - no key in the language that we specyfied"
+ 	      "       + no_key - no key in the language that we specified"
 	      " as argument~n" 
  	      "       + no_key_default - no key in default language~n"
  	      "       + same_value~n"
@@ -869,7 +869,7 @@ get_po_string([$\s|T]) -> get_po_string(T);
 get_po_string([$\r|T]) -> get_po_string(T);
 get_po_string([$\n|T]) -> get_po_string(T);
 get_po_string([$\t|T]) -> get_po_string(T);
-get_po_string([$"|T])  -> header_info(eat_string(T)).
+get_po_string([$"|T])  -> header_info(eat_string(T)).       %" make emacs happy
 
 %%% only header-info has empty po-string !
 header_info({"",R}) -> {header_info, R};  
@@ -881,14 +881,14 @@ eat_string(S) ->
 eat_string([$\\,$"|T], Acc)   -> eat_string(T, [$"|Acc]);   % unescape !
 eat_string([$\\,$\\ |T], Acc) -> eat_string(T, [$\\|Acc]);  % unescape !
 eat_string([$\\,$n |T], Acc)  -> eat_string(T, [$\n|Acc]);  % unescape !
-eat_string([$"|T], Acc)       -> eat_more(T,Acc);
+eat_string([$"|T], Acc)       -> eat_more(T,Acc);           %" make emacs happy
 eat_string([H|T], Acc)        -> eat_string(T, [H|Acc]).
 
 eat_more([$\s|T], Acc) -> eat_more(T, Acc);
 eat_more([$\n|T], Acc) -> eat_more(T, Acc);
 eat_more([$\r|T], Acc) -> eat_more(T, Acc);
 eat_more([$\t|T], Acc) -> eat_more(T, Acc);
-eat_more([$"|T], Acc)  -> eat_string(T, Acc);
+eat_more([$"|T], Acc)  -> eat_string(T, Acc);               %" make emacs happy
 eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
 
