@@ -89,7 +89,7 @@ a_language([Hd|Tl] = Key, Acc) ->
 %%% Function name: 
 %%% search_for
 %%% Function Use:
-%%% A functtion, used as a help the function to a_language. It's mostly 
+%%% A function, used as a help-function to a_language. It's mostly 
 %%% to be used to look for html so that links and html formatting 
 %%% doesn't break when trying to converting strings to a's. The html are
 %%% detected by matching for < and > and passes that text-chunk on to
