@@ -28,35 +28,37 @@
 -define(PROMPT, '> ').
 
 help() ->
-    io:format("~nModule for findings errors and warnings in the gettext_db. ~n"
-	      "It recognize the following situations:~n~n"
- 	      "  * no key found in one of the languages~n"
- 	      "  * key have the same value in two languages~n"
- 	      "  * there is a space mismatch ~n~n"
- 	      "Use the dialog/0 or dialog/1 functions e.g: "
-              "gettext_checker:dialog(\"en\") to start the checker~n~n"
- 	      "The search is based on the two functions~n~n"
- 	      "  * next_non_translated(Key, Language) - get the next error or "
-	      "warning~n"
- 	      "    Returns:  ~n~n"
-              "     [NextKey,Args,Status] where Status is atom:~n"
- 	      "       + no_key - no key in the language that we specified"
-	      " as argument~n" 
- 	      "       + no_key_default - no key in default language~n"
- 	      "       + same_value~n"
- 	      "       + spaces_warning~n"
- 	      "       + the_end~n~n"
-	      "    NextKey - a key from gettext_db in which error occurred "
-	      "(without the language information~n~n"
-	      "    Args - additional arguments. Mainly empty list - only if there"
-	      " is space error it"
-	      "    contains:~n~n"
-	      "       + 'a',char_at_beginning,char_at_the_end~n"
-	      "       + 'b',char_at_beginning~n"
-	      "       + 'e',char_at_end~n~n"	      
-	      "  * get_first_key() - this function is used in order to"
-	      " return the first key from dets table~n",	      
-	      []).
+    io:format(
+      "~nModule for findings errors and warnings in the gettext_db. ~n"
+      "It recognize the following situations:~n~n"
+      "  * no key found in one of the languages~n"
+      "  * key have the same value in two languages~n"
+      "  * there is a space mismatch ~n~n"
+      "Use the dialog/0 or dialog/1 functions e.g: "
+      "gettext_checker:dialog(\"en\") to start the checker~n~n"
+      "The search is based on the two functions~n~n"
+      "  * next_non_translated(Key, Language) - get the next error or "
+      "warning~n"
+      "    Returns:  ~n~n"
+      "     [NextKey,Args,Status] where Status is atom:~n"
+      "       + no_key - no key in the language that we specyfied"
+      " as argument~n" 
+      "       + no_key_default - no key in default language~n"
+      "       + same_value~n"
+      "       + spaces_warning~n"
+      "       + the_end~n~n"
+      "    NextKey - a key from gettext_db in which error occurred "
+      "(without the language information~n~n"
+      "    Args - additional arguments. Mainly empty list - only if there"
+      " is space error it"
+      "    contains:~n~n"
+      "       + 'a',char_at_beginning,char_at_the_end~n"
+      "       + 'b',char_at_beginning~n"
+      "       + 'e',char_at_end~n~n"	      
+      "  * get_first_key() - this function is used in order to"
+      " return the first key from dets table~n",	      
+      []).
+
 
 %% To be called from e.g a Makefile
 display_errors() ->
@@ -148,8 +150,8 @@ check_lang(Lang) ->
 	    end	    
     end.
 
-%% function thats is responsible for automatic space changing for all of the keys
-%%
+%% function thats is responsible for automatic space changing for all 
+%% of the keys
 change_spaces('$end_of_table',QueryLang) ->
     dets:sync(?TABLE_NAME), 
     save_to_po_file(QueryLang,custom),
@@ -217,9 +219,10 @@ find_non_translated(El,QueryLang) ->
 	[NextKey,Key,Args,spaces_warning] ->
 	    io:format("warning: key ~p in lang ~p have space "
 		      "mismatch~n",[show_string(Key),QueryLang]),
-	    Res = spaces_action(Key,QueryLang, Args);					   			
+	    Res = spaces_action(Key,QueryLang, Args);
 	[NextKey,Key,[],no_key_default] ->
-	    io:format("error: there is non translated string with key ~p in deafault lang:~n",
+	    io:format("error: there is non translated string with "
+		      "key ~p in deafault lang:~n",
 		      [show_string(Key)]),
 	    Res = error_action_default(Key,QueryLang);
 	[NextKey,_,_,the_end ]->	    
@@ -258,7 +261,7 @@ next_non_translated({Key, ?DEFAULT_LANG = Lang}, QueryLang) ->
             [NextKey, Key, [], same_value];
         RetValue ->
             do_check_spaces(Key, NextKey, QueryLang, 
-                            RetValue, Value)					      				
+                            RetValue, Value) 				
     end;
 %%
 next_non_translated({Key, QueryLang}, QueryLang) ->
@@ -279,7 +282,7 @@ do_check_spaces(Key, NextKey, QueryLang, RetValue, Value) ->
     case check_spaces(Value,RetValue) of  			     
         ok ->
             next_non_translated(NextKey,QueryLang);
-        Args->%Args have info about where spaces missmatch			
+        Args->%Args have info about where spaces missmatch
             [NextKey,Key,Args,
              spaces_warning]
     end.
@@ -553,7 +556,8 @@ print_possibilities(List,_Other) ->
     F = fun(X,Acc) ->
 		{Key,Val} = X,
 		
-		String  = Acc++". Key:"++show_string(Key)++" Val:"++show_string(Val)++"~n",
+		String  = Acc++". Key:"++show_string(Key)++" Val:"++
+		    show_string(Val)++"~n",
 		io:format("~p~n",[String]),
 		Acc+1
 	end,
@@ -648,10 +652,11 @@ min(A,B,C) ->
 %% get comments for the specyfied key from the default language .po file
 %%
 get_comments(Key)  ->
-    [_Header |FileCommentsQuery] = parse_po_comment(filename:join([?ROOT_DIR,
-								 "custom",
-								 "en",
-								 "gettext.po"])),
+    [_Header |FileCommentsQuery] = 
+	parse_po_comment(filename:join([?ROOT_DIR,
+					"custom",
+					"en",
+					"gettext.po"])),
     case lists:keysearch(Key,1,FileCommentsQuery) of
 	{value, {_,Res}} ->
 	    Res;

@@ -141,7 +141,8 @@ write_header() ->
     io:format(get(fd),
 	      "# SOME DESCRIPTIVE TITLE.\n"
 	      "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER\n"
-	      "# This file is distributed under the same license as the PACKAGE package.\n"
+	      "# This file is distributed under the same license as the "
+	      "PACKAGE package.\n"
 	      "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.\n"
 	      "#\n"
 	      "# NB: Consider using poEdit <http://poedit.sourceforge.net>\n"
@@ -178,7 +179,8 @@ parse_transform(Form,Opts) ->
 	    {Gettext_App_Name, GtxtDir, _} = get_env(),
 	    open_epot_file(Gettext_App_Name, GtxtDir),
 	    ?debug( "--- Opts --- ~p~n",[Opts]),
-	    ?debug("--- Env --- isd_type=~p , gettext_dir=~p~n", [Gettext_App_Name,GtxtDir]),
+	    ?debug("--- Env --- isd_type=~p , gettext_dir=~p~n", 
+		   [Gettext_App_Name,GtxtDir]),
 	    pt(Form, Opts),
 	    close_file(),
 	    Form;

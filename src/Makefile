@@ -6,6 +6,7 @@ VSN=$(GETTEXT_VSN)
 
 MODULES=gettext \
 	gettext_compile \
+	gettext_format \
 	gettext_server \
 	gettext_checker \
 	gettext_sup \
