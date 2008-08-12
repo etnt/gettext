@@ -1,4 +1,4 @@
--module(text_utility).
+-module(gettext_checking).
 
 -export([text_util/0]).
 
