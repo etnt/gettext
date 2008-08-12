@@ -37,7 +37,7 @@ key2str(Key) ->
     key2str(Key, get(gettext_language)).
 
 key2str(Key, "a") -> 
-    a_language(Key, "");
+    a_language(Key, []);
 key2str(Key, Lang) -> 
     gettext_server:key2str(Key, Lang).
 
@@ -45,7 +45,7 @@ key2str(Key, Lang) ->
 %%% -------------------------------------------------------------------
 %%% Function name: 
 %%% a_language
-%%% Function Use:
+%%% Function purpose:
 %%% A special function to convert all strings in a po-file to a's Used
 %%% to check what text has been textified and what hasn't been
 %%% textified. Also converts numbers to b's instead.  The intended
@@ -88,7 +88,7 @@ a_language([Hd|Tl] = Key, Acc) ->
 %%% -------------------------------------------------------------------
 %%% Function name: 
 %%% search_for
-%%% Function Use:
+%%% Function purpose:
 %%% A function, used as a help-function to a_language. It's mostly 
 %%% to be used to look for html so that links and html formatting 
 %%% doesn't break when trying to converting strings to a's. The html are
