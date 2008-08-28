@@ -10,10 +10,9 @@
 	  child_menu
 	 }).
 
-%%%-----------------------------------------------------------------------------
+
 %%% Macro Name       : TOP_MSG
 %%% Macro Explanation: Welcoming message for text_util/2
-%%%-----------------------------------------------------------------------------
 -define(TOP_MSG, 
 	"==============================================================\n"
 	" = = = = = = = = = T E X T    U T I L I T Y = = = = = = = = = \n"
@@ -24,105 +23,83 @@
 	" typing in the corresponding number to the language you want.\n"
 	"--------------------------------------------------------------").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : OP_MSG
 %%% Macro Explanation: Welcoming message for op_menu/2
 %%% Macro connection : Connected with PO_FILE_MSG
-%%%-----------------------------------------------------------------------------
 -define(OP_MSG(Lang), 
        	"==============================================================\n"
 	" = You have chosen "++Lang++" = \n").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : PO_FILE_MSG
 %%% Macro Explanation: Information message op_menu/2 (tells that a specific 
 %%%                    po-file has been prepared for editing
 %%% Macro connection : Connected with OP_MSG
-%%%-----------------------------------------------------------------------------
 -define(PO_FILE_MSG(File),  
 	" The po-file\n"
 	++File++"\n"
 	" has been prepared for you to edit.\n"
 	"==============================================================").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : CONFIRM_MSG
 %%% Macro Explanation: Confirmation message when you choose to quit
-%%%-----------------------------------------------------------------------------
 -define(CONFIRM_MSG, 
 	"You have chosen to exit the Text Utility.\n"
 	"Are you sure you want to do this?\n"
 	"Enter y for yes or n for no: ").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : ERROR_MSG
 %%% Macro Explanation: Error message when bad input is entered
-%%%-----------------------------------------------------------------------------
 -define(ERROR_MSG,
 	"==============================================================\n"
 	" = =  Nonexisting option, please pick an existing option  = = \n"
 	"==============================================================\n").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : ERROR_MSG2
 %%% Macro Explanation: Error message when a menu isn't found
-%%%-----------------------------------------------------------------------------
 -define(ERROR_MSG2,
        	"==============================================================\n"
 	" = = = =  There is no such menu, please pick another  = = = = \n"
 	"==============================================================\n").
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : LANG_OPTIONS
 %%% Macro Explanation: Makes a list of all languages, sorts it and also converts
 %%%                    it from two letter codes into its full language name.
-%%%-----------------------------------------------------------------------------
 -define(LANG_OPTIONS, 
 	[iso639:lc2lang(X) || X <- lists:sort(gettext_server:all_lang())]).
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : LANGS
 %%% Macro Explanation: Makes a list of all languages and sorts it (only two 
 %%%                    letter codes is in the list).
-%%%-----------------------------------------------------------------------------
 -define(LANGS, lists:sort(gettext_server:all_lang())).
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : FIX_OPTIONS
 %%% Macro Explanation: A list of the possible things you can fix with the
 %%%                    Text utility
-%%%-----------------------------------------------------------------------------
 -define(FIX_OPTIONS, ["Fix space-errors",
 		      "Fix msgid"]).
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : ALL_MENU_OPTIONS
 %%% Macro Explanation: A tuple list with the different options for different 
 %%%                    menus, the options is picked out with pick_menu/2
-%%%-----------------------------------------------------------------------------
 -define(ALL_MENU_OPTIONS, [{top_menu, ?LANG_OPTIONS},
 			   {op_menu, ?FIX_OPTIONS}
 			  ]).
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : ALL_FUNCTIONS
 %%% Macro Explanation: A tuple list with the different menu functions in this 
 %%%                    module (GUI menus and Text Utility Functions (things you
 %%%                    can fix))
-%%%-----------------------------------------------------------------------------
 -define(ALL_FUNCTIONS, [{top_menu, fun top_menu/2},
 			{op_menu, fun op_menu/2},
 			{space_error, fun space_error/1},
 			{msgid, fun msgid/1}
 		       ]).
 
-%%%-----------------------------------------------------------------------------
 %%% Macro Name       : HIERARCHY
 %%% Macro Explanation: A tuple list with the hierarchies for each menu.
 %%% Macro notex      : Should be replaced by something else and much better.
 %%%                    With this architecture each menu can only have one 
 %%%                    sub-menu, which is not a good thing
-%%%-----------------------------------------------------------------------------
 -define(HIERARCHY, [{top_menu, {none, top_menu, op_menu}},
 		    {op_menu, {top_menu, op_menu, none}},
 		    {space_error, {op_menu, space_error, none}},
@@ -132,7 +109,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functions for different menus starts here 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%%-----------------------------------------------------------------------------
 %%% Function name    : text_util()
 %%% Argument types   : n/a
