@@ -41,6 +41,7 @@ docs: ../doc/index.html
 	erl -noshell -run edoc_run application "gettext" '".."' '[]'
 
 clean:
-	rm -f $(EBIN_FILES)
+	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
+	  ../doc/stylesheet.css ../doc/erlang.png
 
 ../ebin/*.$(EMULATOR): $(INCLUDES)
