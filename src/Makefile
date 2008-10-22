@@ -15,6 +15,7 @@ MODULES=gettext \
 	iso639 
 
 EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
+ERL_FILES=$(MODULES:%=%.erl)
 
 ERLC_FLAGS+=-W
 
@@ -33,6 +34,11 @@ debug:
 
 imsg:
 	$(MAKE) ERLC_FLAGS+="-Dimsg"
+
+docs: ../doc/index.html
+
+../doc/index.html: $(ERL_FILES)  $(INCLUDES)
+	erl -noshell -run edoc_run application "gettext" '".."' '[]'
 
 clean:
 	rm -f $(EBIN_FILES)
