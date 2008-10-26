@@ -940,8 +940,8 @@ check_bugs() ->
     case dets:open_file(bugs,[{file,FileName}]) of
 	{ok,bugs} ->	    
 	    dets:traverse(bugs,F);
-	{error,_} ->	    
-	    {error,"Problem with inserting message"}
+	{error,_} ->
+	    erlang:error({dets,open_file,FileName})
     end,
     dets:sync(?TABLE_NAME), 
     Save = fun(X)->
