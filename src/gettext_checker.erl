@@ -29,34 +29,35 @@
 
 help() ->
     io:format(
-      "~nModule for findings errors and warnings in the gettext_db. ~n"
-      "It recognize the following situations:~n~n"
+      "Module for finding and reparing dependency errors and warnings in~n"
+      "the gettext_db.~n"
+      "It recognizes the following situations:~n"
       "  * no key found in one of the languages~n"
-      "  * key have the same value in two languages~n"
-      "  * there is a space mismatch ~n~n"
-      "Use the dialog/0 or dialog/1 functions e.g: "
-      "gettext_checker:dialog(\"en\") to start the checker~n~n"
-      "The search is based on the two functions~n~n"
-      "  * next_non_translated(Key, Language) - get the next error or "
-      "warning~n"
-      "    Returns:  ~n~n"
-      "     [NextKey,Args,Status] where Status is atom:~n"
-      "       + no_key - no key in the language that we specyfied"
-      " as argument~n" 
-      "       + no_key_default - no key in default language~n"
-      "       + same_value~n"
-      "       + spaces_warning~n"
-      "       + the_end~n~n"
-      "    NextKey - a key from gettext_db in which error occurred "
-      "(without the language information~n~n"
-      "    Args - additional arguments. Mainly empty list - only if there"
-      " is space error it"
-      "    contains:~n~n"
-      "       + 'a',char_at_beginning,char_at_the_end~n"
-      "       + 'b',char_at_beginning~n"
-      "       + 'e',char_at_end~n~n"	      
+      "  * key has the same value in both languages~n"
+      "  * there is a space mismatch~n"
+      "Use the dialog/0 or dialog/1 functions, e.g. "
+      "gettext_checker:dialog(\"en\"),~nto start the checker~n~n"
+      "The error finder is based on the two functions:~n"
+      "  * next_non_translated(Key, Language) - to get the next error "
+      "or warning~n"
+      "    Returns [NextKey,Args,Status], where:~n"
+      "      Status is one of the atoms:~n"
+      "       - no_key~n" 
+      "       - no_key_default~n"
+      "       - same_value~n"
+      "       - spaces_warning~n"
+      "       - the_end~n"
+      "      NextKey is a key from gettext_db in which the error occurred~n"
+      "      (without the language information).~n"
+      "      Args are additional arguments. Usually the empty list - "
+      "only if~n"
+      "      there is a space error it will contain:~n"
+      "       - 'a', char_at_beginning, char_at_the_end~n"
+      "       - 'b', char_at_beginning~n"
+      "       - 'e', char_at_end~n"	      
       "  * get_first_key() - this function is used in order to"
-      " return the first key from dets table~n",	      
+      " return the first key~n"
+      "    from the dets table.~n",
       []).
 
 
@@ -1045,7 +1046,7 @@ get_new_value(Similar,ProperVal) ->
     end.
    
 
-%% This function returns all languages that are in the system basing on the 
+%% This function returns all languages that are in the system, based on the 
 %% content of the ../gettext/priv/lang directory   
 all_langs() ->
     gettext_server:all_lang() -- [gettext_server:default_lang()].
