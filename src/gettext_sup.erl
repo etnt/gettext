@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% External exports
--export([start_link/0]).
+-export([start_link/0,start_link/1]).
 
 %% supervisor callbacks
 -export([init/1]).
@@ -20,7 +20,10 @@
 %%% API
 %%%----------------------------------------------------------------------
 start_link() ->
-    supervisor:start_link({local, gettext_sup}, gettext_sup, []).
+    start_link([]).
+
+start_link(Options) ->
+    supervisor:start_link({local, gettext_sup}, gettext_sup, Options).
 
 %%%----------------------------------------------------------------------
 %%% Callback functions from supervisor
