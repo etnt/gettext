@@ -165,11 +165,11 @@ write_header() ->
 %%% --------------------------------------------------------------------
 %%% NB: We assume that the surrounding code does some preparations:
 %%%
-%%%   1. Setup the environment variables: 'gettext_dir' and 'gettext_tmp_name'
+%%%   1. Setup the environment variables: 'GETTEXT_DIR' and 'GETTEXT_TMP_NAME'
 %%%   
 %%%   2. The compiler is called with the 'gettext' flag.
 %%%
-%%%   3. The file $(gettext_dir)/lang/$(gettext_tmp_name)/epot.dets is 
+%%%   3. The file $(GETTEXT_DIR)/lang/$(GETTEXT_TMP_NAME)/epot.dets is 
 %%%      removed before the first erlang/yaws file is processed.
 %%%      (entrys are appended to the file)
 %%% --------------------------------------------------------------------
@@ -189,9 +189,9 @@ parse_transform(Form,Opts) ->
     end.
 
 get_env() ->
-    {os:getenv("gettext_tmp_name"),
-     os:getenv("gettext_dir"),
-     os:getenv("gettext_def_lang")}.
+    {os:getenv(?ENV_TMP_NAME),
+     os:getenv(?ENV_ROOT_DIR),
+     os:getenv(?ENV_DEF_LANG)}.
 
 
 pt(Form, Opts) ->
@@ -294,8 +294,8 @@ mk_epot_fname(Gettext_App_Name, GtxtDir) ->
     GtxtDir ++ "/lang/" ++ Gettext_App_Name ++ "/epot.dets".
 
 open_po_file(Gettext_App_Name, GtxtDir, DefLang) ->
-    DefDir = filename:join([GtxtDir, "lang", Gettext_App_Name, DefLang]),
-    Fname = filename:join([DefDir, "gettext.po"]),
+    DefDir = filename:join([GtxtDir, ?LANG_DIR, Gettext_App_Name, DefLang]),
+    Fname = filename:join([DefDir, ?POFILE]),
     filelib:ensure_dir(Fname),
     {ok,Fd} = file:open(Fname, [write]),
     put(fd,Fd).

@@ -15,15 +15,14 @@
          display_errors/0
         ]).
 
-
+-include("gettext.hrl").
 
 
 -define(TABLE_NAME, gettext_db).
--define(ROOT_DIR, filename:join([gettext_server:gettext_dir(), "lang"])).
+-define(ROOT_DIR, filename:join([gettext_server:gettext_dir(), ?LANG_DIR])).
 -define(ENDCOL, 72).
 -define(PIVOT, 4).
 -define(SEP, $\s).
--define(DEFAULT_LANG, "sv").
 -define(BUG_FILE, "bugs.dat").
 -define(PROMPT, '> ').
 
@@ -144,7 +143,7 @@ check_lang(Lang) ->
 	"" ->
 	    error;
 	_Other ->
-	    Fname = filename:join([?ROOT_DIR, "custom", Lang, "gettext.po"]),
+	    Fname = filename:join([?ROOT_DIR, ?CUSTOM_DIR, Lang, ?POFILE]),
 	    case filelib:is_regular(Fname) of
 		true  -> ok;
 		false -> error
@@ -650,14 +649,12 @@ min(A,B,C) ->
        true -> C
     end.
 
-%% get comments for the specyfied key from the default language .po file
+%% get comments for the specified key from the default language .po file
 %%
 get_comments(Key)  ->
     [_Header |FileCommentsQuery] = 
-	parse_po_comment(filename:join([?ROOT_DIR,
-					"custom",
-					"en",
-					"gettext.po"])),
+	parse_po_comment(filename:join([?ROOT_DIR, ?CUSTOM_DIR, "en",
+					?POFILE])),
     case lists:keysearch(Key,1,FileCommentsQuery) of
 	{value, {_,Res}} ->
 	    Res;
@@ -688,12 +685,12 @@ save_to_po_file(QueryLang,Kind) ->
 %% gets full path to the gettext file
 %%
 prepare_file(QueryLang,default) ->
-    Fname = filename:join([?ROOT_DIR,"default",QueryLang,"gettext.po"]),
+    Fname = filename:join([?ROOT_DIR,?DEFAULT_DIR,QueryLang,?POFILE]),
     filelib:ensure_dir(Fname),    
     Fname;
 
 prepare_file(QueryLang,custom) ->
-    Fname = filename:join([?ROOT_DIR,"custom",QueryLang,"gettext.po"]),
+    Fname = filename:join([?ROOT_DIR,?CUSTOM_DIR,QueryLang,?POFILE]),
     filelib:ensure_dir(Fname),    
     Fname.
 
@@ -1051,7 +1048,7 @@ get_new_value(Similar,ProperVal) ->
 all_langs() ->
     gettext_server:all_lang() -- [gettext_server:default_lang()].
 
-%%    CustomPath = filename:join(?ROOT_DIR,"custom"),
+%%    CustomPath = filename:join(?ROOT_DIR,?CUSTOM_DIR),
 %%    {ok,AllCustom} = file:list_dir(CustomPath),    
 %%    DirList = [ X || X<-AllCustom,
 %%		     filelib:is_dir(filename:join(CustomPath,X))==true],

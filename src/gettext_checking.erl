@@ -2,6 +2,9 @@
 
 -export([text_util/0]).
 
+-include("gettext.hrl").
+
+
 -record(menu, {
 	  intro_msg,
 	  chosen,
@@ -151,10 +154,10 @@ op_menu(Menu, Record) ->
     File = case Lang of
 	       "sv" ->
 		   filename:join([gettext_server:gettext_dir(), 
-				  "lang", "default", "sv", "gettext.po"]);
+				  ?LANG_DIR, ?DEFAULT_DIR, "sv", ?POFILE]);
 	       _ ->
 		   filename:join([gettext_server:gettext_dir(), 
-				  "lang", "default", Lang, "gettext.po"])
+				  ?LANG_DIR, ?DEFAULT_DIR, Lang, ?POFILE])
 	   end,
     FixedMsg = Msg++?PO_FILE_MSG(File),
     menu(Menu, FixedMsg, Record).

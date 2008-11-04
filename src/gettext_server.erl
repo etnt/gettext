@@ -106,7 +106,7 @@ init([CallBackMod0, Name]) ->
 %%% The GETTEXT_CBMOD environment variable takes precedence!
 %%%
 get_callback_mod(CallBackMod0) ->
-    case os:getenv("GETTEXT_CBMOD") of
+    case os:getenv(?ENV_CBMOD) of
 	false -> CallBackMod0;
 	CbMod -> list_to_atom(CbMod)
     end.
@@ -116,7 +116,7 @@ get_callback_mod(CallBackMod0) ->
 %%% Next we will try to get hold of the value from the callback.
 %%%
 get_gettext_dir(CallBackMod) ->
-    case os:getenv("GETTEXT_DIR") of
+    case os:getenv(?ENV_ROOT_DIR) of
 	false -> 
             if (CallBackMod /= ?MODULE) ->
                     case catch CallBackMod:gettext_dir() of
@@ -134,7 +134,7 @@ get_gettext_dir(CallBackMod) ->
 %%% Next we will try to get hold of the value from the callback.
 %%%
 get_default_lang(CallBackMod) ->
-    case os:getenv("GETTEXT_DEF_LANG") of
+    case os:getenv(?ENV_DEF_LANG) of
 	false -> 
             if (CallBackMod /= ?MODULE) ->
                     case catch CallBackMod:gettext_def_lang() of
@@ -183,12 +183,11 @@ handle_call({store_pofile, Lang, File}, _From, State) ->
 	Else ->
 	    {reply, Else, State}
     end;
-
+%%
 handle_call(all_lcs, _From, State) ->
     TableName = State#state.table_name,
     Reply = all_lcs_internal(TableName),
     {reply, Reply, State};
-
 %%
 handle_call({reload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
@@ -269,7 +268,8 @@ create_db(TableName, GettextDir, Fname) ->
 
 
 do_unload_custom_lang(TableName, GettextDir, Lang) ->
-    Fname = filename:join([GettextDir, "lang", "custom", Lang, "gettext.po"]),
+    Fname = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR,
+			   Lang, ?POFILE]),
     case filelib:is_file(Fname) of
 	true ->
 	    dets:match_delete(TableName, {{'_',Lang},'_'}),
@@ -281,15 +281,15 @@ do_unload_custom_lang(TableName, GettextDir, Lang) ->
 
 do_reload_custom_lang(TableName, GettextDir, Lang) ->
     dets:match_delete(TableName, {{'_',Lang},'_'}),
-    Dir = filename:join([GettextDir, "lang", "custom", Lang]),
-    Fname = filename:join([Dir, "gettext.po"]), 
+    Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
+    Fname = filename:join([Dir, ?POFILE]), 
     insert_po_file(TableName, Lang, Fname),
     recreate_ets_table(TableName),
     ok.
 
 do_store_pofile(TableName, Lang, File, GettextDir, Cache) ->
-    Dir = filename:join([GettextDir, "lang", "custom", Lang]),
-    Fname = filename:join([Dir, "gettext.po"]), 
+    Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
+    Fname = filename:join([Dir, ?POFILE]), 
     filelib:ensure_dir(Fname), 
     case file:write_file(Fname, File) of
 	ok ->
@@ -419,7 +419,7 @@ populate_db(TableName, GettextDir) ->
     insert_custom(TableName, GettextDir, L).
 
 insert_predefined(TableName, GettextDir, L) ->
-    Dir = filename:join([GettextDir, "lang", "default"]),
+    Dir = filename:join([GettextDir, ?LANG_DIR, ?DEFAULT_DIR]),
     insert_data(TableName, Dir, L).
 
 insert_data(TableName, Dir, L) ->
@@ -428,7 +428,7 @@ insert_data(TableName, Dir, L) ->
 	    F = fun([$.|_], Acc)     -> Acc;  % ignore in a local inst. env.
 		   ("CVS" ++ _, Acc) -> Acc;  % ignore in a local inst. env.
 		   (LC, Acc)         ->
-			Fname = filename:join([Dir, LC, "gettext.po"]),
+			Fname = filename:join([Dir, LC, ?POFILE]),
 			insert_po_file(TableName, LC, Fname),
 			[#cache{language = LC} | Acc]
 		end,
@@ -447,7 +447,7 @@ insert_po_file(TableName, LC, Fname) ->
     end.
 
 insert_custom(TableName, GettextDir, L) ->
-    Dir = filename:join([GettextDir, "lang", "custom"]),
+    Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR]),
     insert_data(TableName, Dir, L).
 
 insert(TableName, LC, L) ->
