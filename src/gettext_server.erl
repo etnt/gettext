@@ -203,16 +203,15 @@ handle_call({unload_custom_lang, Lang}, _From, State) ->
     {reply, do_unload_custom_lang(TableName, GettextDir, Lang), State};
 %%
 handle_call(recreate_db, _From, State) ->
-    GettextDir = State#state.gettext_dir,
-    TableName = State#state.table_name,
-    Fname = filename:join(GettextDir, atom_to_list(TableName) ++ "_db.dets"),
-    dets:close(TableName),
-    file:delete(Fname),
-    create_db(TableName, GettextDir, Fname),
+    recreate_db(State#state.table_name, State#state.gettext_dir),
     {reply, ok, State};
 %%
 handle_call(gettext_dir, _From, State) ->
     {reply, State#state.gettext_dir, State};
+%%
+handle_call({change_gettext_dir, Dir}, _From, State) ->
+    recreate_db(State#state.table_name, Dir),
+    {reply, ok, State#state{gettext_dir = Dir}};
 %%
 handle_call(default_lang, _From, State) ->
     {reply, State#state.def_lang, State}.
@@ -258,14 +257,21 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
+db_filename(TableName, GettextDir) ->
+    filename:join(GettextDir,  atom_to_list(TableName) ++ ".dets").
+
 create_db(TableName, GettextDir) ->
-    Fname = filename:join(GettextDir,  atom_to_list(TableName) ++ ".dets"),
-    create_db(TableName, GettextDir, Fname).
+    create_db(TableName, GettextDir, db_filename(TableName, GettextDir)).
 
 create_db(TableName, GettextDir, Fname) ->
     filelib:ensure_dir(Fname), 
     init_db_table(TableName, GettextDir, Fname).
 
+recreate_db(TableName, GettextDir) ->
+    Fname = db_filename(TableName, GettextDir),
+    dets:close(TableName),
+    file:delete(Fname),
+    create_db(TableName, GettextDir, Fname).
 
 do_unload_custom_lang(TableName, GettextDir, Lang) ->
     Fname = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR,

@@ -13,6 +13,7 @@
 	 unload_custom_lang/1, unload_custom_lang/2,
 	 recreate_db/0, recreate_db/1,
 	 gettext_dir/0, gettext_dir/1,
+	 change_gettext_dir/1, change_gettext_dir/2,
 	 default_lang/0, default_lang/1,
 	 store_pofile/2, store_pofile/3, 
 	 lang2cset/1, lang2cset/2]).
@@ -74,6 +75,13 @@ gettext_dir() ->
 
 gettext_dir(Server) ->
     gen_server:call(Server, gettext_dir, infinity).
+
+
+change_gettext_dir(Dir) ->
+    change_gettext_dir(?DEFAULT_SERVER, Dir).
+
+change_gettext_dir(Server, Dir) ->
+    gen_server:call(Server, {change_gettext_dir, Dir}, infinity).
 
 
 default_lang() ->
