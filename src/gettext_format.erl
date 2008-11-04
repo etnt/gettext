@@ -97,14 +97,14 @@ check_translations() ->
     BadSTXT = 
 	ets:foldl(
 	  %%    ignore meta data entries like 'header_info'
-	  fun({{Info, _Lang}, _} = P, Acc) when is_atom(Info) -> 
+	  fun({{Info, _Lang}, _}, Acc) when is_atom(Info) -> 
 		  Acc;
 
 	     %% XXX add match for specific OriginalFormatStr-TranslatedFormatStr
 	     %%     here if they use $ in a non-STXT conext
 
 	     %% check strings only
-	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr} = P, Acc) -> 
+	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr}, Acc) -> 
 		  Vars1 = get_vars_in_format_str(OriginalFormatStr),
 		  Vars2 = get_vars_in_format_str(TranslatedFormatStr),
 
@@ -153,11 +153,11 @@ check_translations() ->
     BadFTXT = 
 	ets:foldl(
 	  %%    ignore meta data entries like 'header_info'
-	  fun({{Info, _Lang}, _} = P, Acc) when is_atom(Info) -> 
+	  fun({{Info, _Lang}, _}, Acc) when is_atom(Info) -> 
 		  Acc;
 
 	     %% check strings only
-	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr} = P, Acc) -> 
+	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr}, Acc) -> 
 		  Tags1 = get_format_tags(OriginalFormatStr),
 		  Tags2 = get_format_tags(TranslatedFormatStr),
 		  case Tags1 == Tags2 of
@@ -195,7 +195,7 @@ get_vars_in_format_str(FormatStr) ->
 
 get_vars([$$|R], Vars) ->
     get_vars2(R, Vars);
-get_vars([C|R], Vars) ->
+get_vars([_C|R], Vars) ->
     get_vars(R, Vars);
 %% finished
 get_vars([], Vars) ->
@@ -228,10 +228,10 @@ get_format_tags(IoFormatStr) ->
     get_format_tags(IoFormatStr, []).
 
 get_format_tags([], Tags) -> lists:reverse(Tags);
-get_format_tags([C], Tags) -> lists:reverse(Tags);
+get_format_tags([_C], Tags) -> lists:reverse(Tags);
 
 get_format_tags([$~, C| R], Tags) -> get_format_tags(R, [C|Tags]);
-get_format_tags([C|R], Tags) -> get_format_tags(R, Tags).
+get_format_tags([_C|R], Tags) -> get_format_tags(R, Tags).
     
     
 

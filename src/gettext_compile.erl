@@ -198,7 +198,7 @@ pt(Form, Opts) ->
     put(fname, ""),
     pt(Form, Opts, undefined).
 
-pt([H|T],Opts,Func) when list(H) ->
+pt([H|T],Opts,Func) when is_list(H) ->
     ?debug( "--- 1 --- ~p~n",[H]),
     F = fun (X) -> pt(X,Opts,Func) end,
     [lists:map(F,H)|pt(T,Opts,Func)];
@@ -234,7 +234,7 @@ pt([{block,N,B}|T], Opts, Func) ->
     Block = {block,N,pt(B,Opts,Func)},
     [Block|pt(T, Opts, Func)];
 %%%
-pt([H|T], Opts, Func) when tuple(H) ->
+pt([H|T], Opts, Func) when is_tuple(H) ->
     ?debug( "--- 3 --- ~p~n",[H]),
     [while(size(H), H, Opts, Func) | pt(T, Opts, Func)];
 %%%
@@ -242,7 +242,7 @@ pt([H|T], Opts, Func) ->
     ?debug( "--- 4 --- ~p~n",[H]),
     [H | pt(T, Opts, Func)];
 %%%
-pt(T, Opts, Func) when tuple(T) ->
+pt(T, Opts, Func) when is_tuple(T) ->
     ?debug( "--- 5 --- ~p~n",[T]),
     while(size(T), T, Opts, Func);
 %%%
@@ -303,10 +303,10 @@ open_po_file(Gettext_App_Name, GtxtDir, DefLang) ->
 close_file() ->
     file:close(get(fd)).
 
-to_list(A) when atom(A)    -> atom_to_list(A);
-to_list(I) when integer(I) -> integer_to_list(I);
-to_list(B) when binary(B)  -> binary_to_list(B);
-to_list(L) when list(L)    -> L.
+to_list(A) when is_atom(A)    -> atom_to_list(A);
+to_list(I) when is_integer(I) -> integer_to_list(I);
+to_list(B) when is_binary(B)  -> binary_to_list(B);
+to_list(L) when is_list(L)    -> L.
 
 
 

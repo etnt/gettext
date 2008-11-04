@@ -120,7 +120,7 @@ get_gettext_dir(CallBackMod) ->
 	false -> 
             if (CallBackMod /= ?MODULE) ->
                     case catch CallBackMod:gettext_dir() of
-                        Dir when list(Dir) -> Dir;
+                        Dir when is_list(Dir) -> Dir;
                         _                  -> code:priv_dir(gettext) % fallback
                     end;
                true -> 
@@ -138,7 +138,7 @@ get_default_lang(CallBackMod) ->
 	false -> 
             if (CallBackMod /= ?MODULE) ->
                     case catch CallBackMod:gettext_def_lang() of
-                        Dir when list(Dir) -> Dir;
+                        Dir when is_list(Dir) -> Dir;
                         _                  -> ?DEFAULT_LANG % fallback
                     end;
                true ->

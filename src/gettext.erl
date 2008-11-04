@@ -85,10 +85,10 @@ default_lang(Server) ->
 
 %%--------------------------------------------------------------------
 
-store_pofile(Lang, File) when binary(File) ->
+store_pofile(Lang, File) when is_binary(File) ->
     store_pofile(?DEFAULT_SERVER, Lang, File).
 
-store_pofile(Server, Lang, File) when binary(File) ->
+store_pofile(Server, Lang, File) when is_binary(File) ->
     gen_server:call(Server, {store_pofile, Lang, File}, infinity).
 
 %%--------------------------------------------------------------------
@@ -172,10 +172,10 @@ eat_more([$"|T], Acc)  -> eat_string(T, Acc);               %"make emacs happy
 eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
 
-to_list(A) when atom(A)    -> atom_to_list(A);
-to_list(I) when integer(I) -> integer_to_list(I);
-to_list(B) when binary(B)  -> binary_to_list(B);
-to_list(L) when list(L)    -> L.
+to_list(A) when is_atom(A)    -> atom_to_list(A);
+to_list(I) when is_integer(I) -> integer_to_list(I);
+to_list(B) when is_binary(B)  -> binary_to_list(B);
+to_list(L) when is_list(L)    -> L.
 
 
 %%% --------------------------------------------------------------------
@@ -219,10 +219,10 @@ a_language([$\s = Hd |Tl], Acc) ->
 a_language([$~ = Hd |Tl], Acc) ->
     [Hd2|Tl2] = Tl, 
     a_language(Tl2, [Hd2, $~ |Acc]);
-a_language([$$|Tl] = Key, Acc) ->
+a_language([$$|Tl], Acc) ->
     {RestKey, DollarFormat} = search_for(Tl, [], $$),
     a_language(RestKey, DollarFormat++[$$|Acc]);
-a_language([Hd|Tl] = Key, Acc) ->
+a_language([Hd|Tl], Acc) ->
     Char = if
 	    (Hd > 64 andalso Hd < 91) orelse  % See function spec above (1.)
 	    (Hd > 96 andalso Hd < 123) orelse % See function spec above (2.) 
@@ -246,9 +246,9 @@ a_language([Hd|Tl] = Key, Acc) ->
 %%% a_language and then a_language does it's magic and continues
 %%% working on the rest of the string.
 %%% --------------------------------------------------------------------
-search_for([], Acc, ToLookFor) ->
+search_for([], Acc, _ToLookFor) ->
     {Acc, []};
-search_for([Hd|Tl] = Key, Acc, ToLookFor) ->
+search_for([Hd|Tl], Acc, ToLookFor) ->
     case Hd of
 	ToLookFor ->
 	    {Tl, [Hd|Acc]};

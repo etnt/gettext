@@ -896,10 +896,10 @@ eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
 
 
-to_list(A) when atom(A)    -> atom_to_list(A);
-to_list(I) when integer(I) -> integer_to_list(I);
-to_list(B) when binary(B)  -> binary_to_list(B);
-to_list(L) when list(L)    -> L.
+to_list(A) when is_atom(A)    -> atom_to_list(A);
+to_list(I) when is_integer(I) -> integer_to_list(I);
+to_list(B) when is_binary(B)  -> binary_to_list(B);
+to_list(L) when is_list(L)    -> L.
 
 %% this function saves new entry in dets 'bugs' table which is placed in
 %% ROOT_DIR 
