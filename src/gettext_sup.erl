@@ -33,7 +33,8 @@ start_link() ->
 %%          {error, Reason}   
 %%----------------------------------------------------------------------
 init([]) ->
-    CallBackMod = gettext_server, % YOU SHOULD POSSIBLY CHANGE THIS !!
+    init([gettext_server]);  % just a default that should always work
+init([CallBackMod]) ->
     GettextServer = {gettext_server,{gettext_server,start_link,[CallBackMod]},
 	      permanent,5000,worker,[gettext_server]},
     {ok,{{one_for_one,3,10}, [GettextServer]}}.

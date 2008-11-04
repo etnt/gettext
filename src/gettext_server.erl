@@ -16,8 +16,9 @@
 -export([start_link/0, start_link/1, start_link/2,
 	 start/0, start/1, start/2]).
 
-%% Default callback functions
--export([custom_dir/0]).
+%% Standard callback functions to make this module work as an
+%% initialization callback for itself.
+-export([gettext_dir/0, gettext_def_lang/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
@@ -52,6 +53,15 @@
 %%====================================================================
 %% External functions
 %%====================================================================
+
+%% Callback functions for default initialization.
+gettext_dir() ->
+    code:priv_dir(gettext).
+
+gettext_def_lang() ->
+    ?DEFAULT_LANG.
+    
+
 %%--------------------------------------------------------------------
 %% Function: start_link/0
 %% Description: Starts the server
@@ -118,14 +128,10 @@ get_callback_mod(CallBackMod0) ->
 get_gettext_dir(CallBackMod) ->
     case os:getenv(?ENV_ROOT_DIR) of
 	false -> 
-            if (CallBackMod /= ?MODULE) ->
-                    case catch CallBackMod:gettext_dir() of
-                        Dir when is_list(Dir) -> Dir;
-                        _                  -> code:priv_dir(gettext) % fallback
-                    end;
-               true -> 
-                    code:priv_dir(gettext) % fallback
-            end;
+	    case catch CallBackMod:gettext_dir() of
+		Dir when is_list(Dir) -> Dir;
+		_ -> gettext_dir() % fallback
+	    end;
 	Dir -> Dir
     end.
 
@@ -136,20 +142,12 @@ get_gettext_dir(CallBackMod) ->
 get_default_lang(CallBackMod) ->
     case os:getenv(?ENV_DEF_LANG) of
 	false -> 
-            if (CallBackMod /= ?MODULE) ->
-                    case catch CallBackMod:gettext_def_lang() of
-                        Dir when is_list(Dir) -> Dir;
-                        _                  -> ?DEFAULT_LANG % fallback
-                    end;
-               true ->
-                    ?DEFAULT_LANG % fallback
-            end;
+	    case catch CallBackMod:gettext_def_lang() of
+		Dir when is_list(Dir) -> Dir;
+		_ -> gettext_def_lang() % fallback
+	    end;
 	DefLang -> DefLang
     end.
-
-%% Default callback function
-custom_dir() ->
-    code:priv_dir(gettext).
 
 
 %%--------------------------------------------------------------------
