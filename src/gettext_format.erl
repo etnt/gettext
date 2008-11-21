@@ -18,7 +18,7 @@
 %% ----------------------------------------------------------------------------
 %% @spec stxt(FormatStr::string(), 
 %%            Args::[{Key::atom(),SubVal::string()}]) -> string()
-%% @doc  this function is similar to ?FTXT but alows the FormatStr to use
+%% @doc  This function is similar to ?FTXT but alows the FormatStr to use
 %%       Args in any order, any number of times or not at all.
 %%       This is needed for translators of po files to be able to write
 %%       translations with a natural scentence structure. 
@@ -30,7 +30,7 @@
 %%       FormatStr is processed as shown below (premature FormatStr end states
 %%       and "missing char" edges aren't shown):
 %%
-%%             $            !$             $           
+%%```          $            !$             $           
 %%     ->(0) --------> (2) --------> (3) -------> (4)
 %%    | ^  \            \           ^  \           |  
 %%    | \__/             \ $        \__/ !$        |
@@ -42,7 +42,7 @@
 %%    1  : quoted $ found
 %%    2/3: (start) accumulating tag name
 %%    4  : look up tag in Args  
-%%
+%%'''
 %%      Note that Key/arg_name should be chosen to be helpfull to the translator
 %%      who will usually only have acess to FormatStr shown as the MsgId in the
 %%      po file.

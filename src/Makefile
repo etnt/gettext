@@ -19,15 +19,13 @@ ERL_FILES=$(MODULES:%=%.erl)
 
 ERLC_FLAGS+=-W
 
-INCLUDES=
+INCLUDES=gettext_internal.hrl
 
 #
 # Targets
 #
 
 all: $(EBIN_FILES)
-
-gettext_compile: ../ebin/gettext_compile.$(EMULATOR)
 
 debug:
 	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) +debug_info -Ddebug"
@@ -37,11 +35,11 @@ imsg:
 
 docs: ../doc/index.html
 
-../doc/index.html: $(ERL_FILES)  $(INCLUDES)
+../doc/index.html: ../doc/overview.edoc $(ERL_FILES)  $(INCLUDES)
 	erl -noshell -run edoc_run application "gettext" '".."' '[]'
 
 clean:
 	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
 	  ../doc/stylesheet.css ../doc/erlang.png
 
-../ebin/*.$(EMULATOR): $(INCLUDES)
+../ebin/*.beam: $(INCLUDES)
