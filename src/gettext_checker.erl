@@ -15,7 +15,7 @@
          display_errors/0
         ]).
 
--include("gettext.hrl").
+-include("gettext_internal.hrl").
 
 
 -define(TABLE_NAME, gettext_db).

@@ -1,6 +1,3 @@
--ifndef(_GETTEXT_HRL).
--define(_GETTEXT_HRL, true).
-
 -define(GETTEXT_HEADER_INFO, header_info).
 
 -define(DEFAULT_LANG, "en").
@@ -17,5 +14,3 @@
 -define(ENV_ROOT_DIR, "GETTEXT_DIR").
 -define(ENV_DEF_LANG, "GETTEXT_DEF_LANG").
 -define(ENV_CBMOD, "GETTEXT_CBMOD").
-
--endif.

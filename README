@@ -61,7 +61,7 @@ you wrap it with one of the gettext macros ?TXT/1 or ?TXT2.
 
 Example:
 ............
-  -include(".../gettext/include/gettext.hrl").
+  -include_lib("gettext/include/gettext.hrl").
 
   hello(LangCode) ->
      ?TXT2("Hello World", LangCode).

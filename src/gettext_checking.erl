@@ -2,7 +2,7 @@
 
 -export([text_util/0]).
 
--include("gettext.hrl").
+-include("gettext_internal.hrl").
 
 
 -record(menu, {

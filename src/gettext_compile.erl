@@ -11,7 +11,7 @@
 %%%----------------------------------------------------------------------
 -export([parse_transform/2, epot2po/0]).
 
--include("gettext.hrl").
+-include("gettext_internal.hrl").
 
 -ifdef(debug).
 %%-define(debug(S,A), io:format( S, A)).

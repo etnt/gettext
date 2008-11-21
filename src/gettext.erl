@@ -18,7 +18,7 @@
 	 store_pofile/2, store_pofile/3, 
 	 lang2cset/1, lang2cset/2]).
 
--include("gettext.hrl").
+-include("gettext_internal.hrl").
 
 -define(DEFAULT_SERVER, gettext_server).
 
