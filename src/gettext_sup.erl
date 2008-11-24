@@ -1,11 +1,9 @@
 %%%----------------------------------------------------------------------
 %%% File    : gettext_sup.erl
-%%% Author  : tobbe@bluetail.com
-%%% Purpose : Supervisor for the gettext handling
 %%% Created : 28 Oct 2003 
-%%%
-%%% $Id$
-%%%----------------------------------------------------------------------
+%%% @author tobbe@bluetail.com
+%%% @doc Supervisor for the gettext application
+
 -module(gettext_sup).
 
 -behaviour(supervisor).

@@ -1,8 +1,9 @@
 %%% -------------------------------------------------------------------
 %%% File    : gettext_checker.erl
 %%% Created : 19 Jul 2007 by <kubanowak@gmail.com>
-%%% Desc.   : Check and validate if any translated strings are missing.
-%%%-------------------------------------------------------------------
+%%% @author kubanowak@gmail.com
+%%% @doc Check and validate if any translated strings are missing.
+
 -module(gettext_checker). 
 
 -export([dialog/0,

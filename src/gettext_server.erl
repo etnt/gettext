@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
 %%% File    : gettext_server.erl
-%%% Author  : Torbjorn Tornkvist <tobbe@bluetail.com>
-%%% Desc.   : Internationalization support.
 %%% Created : 28 Oct 2003 by Torbjorn Tornkvist <tobbe@bluetail.com>
-%%%-------------------------------------------------------------------
+%%% @author Torbjorn Tornkvist <tobbe@bluetail.com>
+%%% @doc Server for Erlang gettext.
+
 -module(gettext_server).
 
 -behaviour(gen_server).

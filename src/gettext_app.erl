@@ -1,11 +1,8 @@
 %%%----------------------------------------------------------------------
 %%% File    : gettext_app.erl
-%%% Author  : tobbe@bluetail.com
-%%% Purpose : gettext handling
 %%% Created : 28 Oct 2003 
-%%%
-%%% $Id$
-%%%----------------------------------------------------------------------
+%%% @author tobbe@bluetail.com
+%%% @doc Application start/stop.
 -module(gettext_app).
 
 -behaviour(application).

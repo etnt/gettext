@@ -1,14 +1,11 @@
--module(gettext_compile).
 %%%----------------------------------------------------------------------
 %%% Created:  27 Oct 2003 by tobbe@bluetail.com
-%%% Function: Tools for multi-lingual capabilities,
-%%%           similar to GNU gettext.
-%%%
-%%%   NB: MAKE SURE TO NOT CALL ANY OTHER MODULE IN THE SYSTEM.
-%%%       THIS CODE RUNS IN A PRE-BUILD PHASE !!!
-%%%
-%%% $Id$
-%%%----------------------------------------------------------------------
+%%% @author tobbe@bluetail.com
+%%% @doc Parse transform for gettext (see gettext.hrl) and conversion
+%%% from 'epot'- to 'po'-files.
+
+-module(gettext_compile).
+
 -export([parse_transform/2, epot2po/0]).
 
 -include("gettext_internal.hrl").

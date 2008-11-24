@@ -1,5 +1,6 @@
-%% module for TXT functions
-%%-----------------------------------------------------------------------------
+%% @private
+%% @author Håkan Stenholm <hokan@kreditor.se>
+%% @doc Support module for TXT functions.
 
 -module(gettext_format).
 

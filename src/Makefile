@@ -9,7 +9,6 @@ MODULES=gettext \
 	gettext_format \
 	gettext_server \
 	gettext_checker \
-	gettext_checking \
 	gettext_sup \
 	gettext_app \
 	iso639 

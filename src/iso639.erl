@@ -1,7 +1,9 @@
 %%%-------------------------------------------------------------------
-%%% Created     :  9 Mar 2004 by <tobbe@bluetail.com>
-%%% Description : ISO 639 2- and 3-letter codes.
-%%%-------------------------------------------------------------------
+%%% Created     :  9 Mar 2004 by <>
+%%% @author tobbe@bluetail.com
+%%% @doc ISO 639 2- and 3-letter codes.
+%%% @private
+
 -module(iso639).
 -export([lc2lang/1, all2lang/0, lc3lang/1, all3lang/0]).
 

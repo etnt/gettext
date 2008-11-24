@@ -1,8 +1,7 @@
 %%%----------------------------------------------------------------------
 %%% Created:  27 Oct 2003 by tobbe@bluetail.com
-%%% Function: Tools for multi-lingual capabilities,
-%%%           similar to GNU gettext.
-%%%----------------------------------------------------------------------
+%%% @author Torbjörn Törnkvist <tobbe@bluetail.com>
+%%% @doc Erlang Gettext tools for multi-lingual capabilities
 -module(gettext).
 
 -export([parse_po/1, lc2lang/1, quotes/1,
