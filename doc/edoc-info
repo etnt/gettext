@@ -1,4 +1,0 @@
-{application,gettext}.
-{packages,[]}.
-{modules,[gettext,gettext_app,gettext_checker,gettext_checking,
-          gettext_compile,gettext_format,gettext_server,gettext_sup,iso639]}.
