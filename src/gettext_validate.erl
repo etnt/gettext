@@ -55,51 +55,81 @@ validate(PoFilePath) ->
     validate(PoFilePath, "").
 
 validate(PoFilePath, IgnoreFilePath) ->
+    Terms = 
+	case IgnoreFilePath of
+	    "" -> [];
+	    _  -> case file:consult(IgnoreFilePath) of
+		      {ok, Terms0}     -> Terms0;
+		      {error, Reason0} -> 
+			  throw({no_ignore_file_or_malformed_file, Reason0})
+		  end
+	end,
+    Ignores = ets:new(dummy, [set,private,{keypos,1}]),
 
-    case IgnoreFilePath of
-	"" -> ok;
-	_  -> ok  %XXX ??? pass info to checks to hide errors/warnings
-    end,
-
-    %% get file and discard non-text meta data header
-    [{header_info, _} | Trans] = 
+    %% catch exceptions so that ets table is always cleaned up
+    try
+	%% fill ets table with ignore data for fast lookup
+	lists:foreach(fun(E) -> ets:insert(Ignores, {E}) end, Terms),
+	
+	%% get file and discard non-text meta data header
+	[{header_info, _} | Trans] = 
 	try gettext:parse_po(PoFilePath)
 	catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	end,
-    
+	
+	{BadEntries, [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]} =
+	run_checks(Ignores, Trans),
+	format_results(PoFilePath, BadEntries, 
+		       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml])
+    catch _:Reason2 -> 
+	    throw({validator_crashed, Reason2})
+    after
+	%% all checks done - discard ignore table
+	ets:delete(Ignores)
+    end,
+    ok.
+
+
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+run_checks(Ignores, Trans) ->
+    %% Each check runs independetly of all others - no data is retained between
+    %% them this makes it easy to add more tests without breaking stuff.
     BadSTXT = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_stxt(TxtPair, PoFilePath, Acc)
+				  look_for_bad_stxt(TxtPair, Ignores, Acc)
 			  end, [], Trans),
 
     BadFTXT = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_ftxt(TxtPair, PoFilePath, Acc)
+				  look_for_bad_ftxt(TxtPair, Ignores, Acc)
 			  end, [], Trans),
 
     NoTrans = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_no_translation(TxtPair, PoFilePath,
+				  look_for_no_translation(TxtPair, Ignores,
 							  Acc)
 			  end, [], Trans),
 
     BadWS = lists:foldl(fun(TxtPair, Acc) -> 
-				look_for_bad_ws(TxtPair, PoFilePath, Acc) 
+				look_for_bad_ws(TxtPair, Ignores, Acc) 
 			end, [], Trans),
 
     BadPunct = lists:foldl(fun(TxtPair, Acc) -> 
 				   look_for_bad_punctuation(
-				     TxtPair, PoFilePath, Acc)
+				     TxtPair, Ignores, Acc)
 			   end, [], Trans),
 
     BadHtml = lists:foldl(fun(TxtPair, Acc) -> 
 				  look_for_bad_html(
-				    TxtPair, PoFilePath, Acc)
+				    TxtPair, Ignores, Acc)
 			  end, [], Trans),
 
     
     BadEntries = lists:flatten([BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, 
 				BadHtml]),
-    
+    {BadEntries, [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]}.
 
 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+format_results(PoFilePath, BadEntries, 
+	       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]) ->
     io:format("===========================================\n"
 	      " Checking: ~s\n"
 	      " Total - ~s\n"
@@ -135,9 +165,7 @@ validate(PoFilePath, IgnoreFilePath) ->
 	      "Changes in html (~s) \n"
 	      "-------------------------------------------\n"
 	      "~p\n", [format_count(BadHtml), BadHtml]),
-
     ok.
-
 
 %% return: io_list()
 format_count(BadEntries) ->
@@ -162,7 +190,7 @@ count(BadEntries) ->
 
 
 look_for_bad_stxt({OriginalFormatStr, TranslatedFormatStr}, 
-		  _PoFilePath, Acc) -> 
+		  _Ignores, Acc) -> 
     %% XXX $ in non-STXT format strings isn't handle this may result 
     %%     in crashes !!! 
 
@@ -209,7 +237,7 @@ look_for_bad_stxt({OriginalFormatStr, TranslatedFormatStr},
     end.
 
 
-look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, _PoFilePath, Acc) ->
+look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, _Ignores, Acc) ->
     %% check strings only
     Tags1 = get_format_tags(OriginalFormatStr),
     Tags2 = get_format_tags(TranslatedFormatStr),
@@ -225,16 +253,20 @@ look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, _PoFilePath, Acc) ->
 
 
 look_for_no_translation({OriginalFormatStr, TranslatedFormatStr}, 
-			_PoFilePath, Acc) ->
+			Ignores, Acc) ->
     case OriginalFormatStr == TranslatedFormatStr of
 	false -> Acc;
-	true  -> [{'Warning',
-		   "Text appears to be untranslated.",
-		   {text, OriginalFormatStr}} | Acc]
+	true  -> 
+	    do_ignore(Ignores, 
+		      {no_translation, OriginalFormatStr, TranslatedFormatStr}, 
+		      {'Warning',
+		       "Text appears to be untranslated.",
+		       {text, OriginalFormatStr}}, 
+		      Acc)
     end.
 
 
-look_for_bad_ws({OriginalFormatStr, TranslatedFormatStr}, _PoFilePath, Acc) ->
+look_for_bad_ws({OriginalFormatStr, TranslatedFormatStr}, _Ignores, Acc) ->
     FrontMatch = ws_match(OriginalFormatStr, TranslatedFormatStr),
     ORev = lists:reverse(OriginalFormatStr),
     TRev = lists:reverse(TranslatedFormatStr),
@@ -293,7 +325,7 @@ is_ws(_) -> false.
 %%       punctuation if unicode is supported or when languages with unusal
 %%       punctuation rules is used in the po file 
 look_for_bad_punctuation({OriginalFormatStr, TranslatedFormatStr}, 
-			 _PoFilePath, Acc) ->
+			 _Ignores, Acc) ->
     case text_with_no_ws_front(lists:reverse(OriginalFormatStr), 
 			       lists:reverse(TranslatedFormatStr)) of
 
@@ -355,7 +387,7 @@ is_punct(C) ->
 
 %% ----------------------------------------------------------------------------
 look_for_bad_html({OriginalFormatStr, TranslatedFormatStr}, 
-		  _PoFilePath, Acc) ->
+		  _Ignores, Acc) ->
     %% convert to ehtml
     Oehtml = gettext_yaws_html:h2e(OriginalFormatStr),
     Tehtml = gettext_yaws_html:h2e(TranslatedFormatStr),
@@ -501,3 +533,20 @@ get_format_tags([_C], Tags) -> lists:reverse(Tags);
 
 get_format_tags([$~, C| R], Tags) -> get_format_tags(R, [C|Tags]);
 get_format_tags([_C|R], Tags) -> get_format_tags(R, Tags).
+
+
+%% ----------------------------------------------------------------------------
+%% return: bool()
+%% return true if Key is in Tab
+is_ignore(Tab, {_Type, _OrgText, _TransText} = Key) ->
+    case ets:lookup(Tab, Key) of
+	[{Key}] -> true;
+	[] -> false
+    end.
+	     
+%% update Acc with Bad only if Key not in Ignores
+do_ignore(Ignores, Key, Bad, Acc) ->
+    case is_ignore(Ignores, Key) of
+	false -> [Bad | Acc];
+	true  -> Acc
+    end.
