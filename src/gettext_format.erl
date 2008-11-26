@@ -9,7 +9,7 @@
 %%-----------------------------------------------------------------------------
 -export ([
 	  stxt/2,
-	  check_translations/0
+	  get_vars_in_format_str/1
 	 ]).  
 
 %%=============================================================================
@@ -85,107 +85,6 @@ get_arg(Key, Args) ->
 
 
 %% ----------------------------------------------------------------------------
-%% Check gettext translation DB for malformed format strings
-%% 
-%% Note: gettext must be running for this check to work.
-%% Note: some valid strings may be caught by the current code e.g. if they
-%%       contain $ with a non-STXT/2 usage pattern
-%% Note: FTXT/2 argument detection is naive, but should work well as long as ~s,
-%%       ~p, ... and similar plain format directives (whitout options) are used
-%%       in FTXT 
-check_translations() ->
-    
-    BadSTXT = 
-	ets:foldl(
-	  %%    ignore meta data entries like 'header_info'
-	  fun({{Info, _Lang}, _}, Acc) when is_atom(Info) -> 
-		  Acc;
-
-	     %% XXX add match for specific OriginalFormatStr-TranslatedFormatStr
-	     %%     here if they use $ in a non-STXT conext
-
-	     %% check strings only
-	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr}, Acc) -> 
-		  Vars1 = get_vars_in_format_str(OriginalFormatStr),
-		  Vars2 = get_vars_in_format_str(TranslatedFormatStr),
-
-		  InterSect = lists_ext:intersection(Vars1, Vars2),
-		  %% some $...$ are unused
-		  OkButSuspect = lists_ext:subtract(Vars1, Vars2),
-		  %% translation contains unkown $...$
-		  BadVars      = lists_ext:subtract(Vars2, Vars1),
-
-		  case {length(InterSect), length(OkButSuspect),
-			length(BadVars)} of
-		      {_,Suspect,Bad} when (Bad > 0) and (Suspect > 0) ->
-			  [{"ERROR - translation contains unknown var(s) "
-			    "as well as unused var(s) (this may be ok)",
-			    {lang,             Lang},
-			    {bad_vars,         BadVars},
-			    {unused_vars,      OkButSuspect},
-			    {original,         OriginalFormatStr}, 
-			    {translation,      TranslatedFormatStr}, 
-			    {original_vars,    Vars1}, 
-			    {translation_vars, Vars2}} | Acc];
-		      {_,_,Bad} when Bad > 0 ->
-			  [{"ERROR - translation contains unknown var(s)",
-			    {lang,             Lang},
-			    {bad_vars,         BadVars},
-			    {original,         OriginalFormatStr}, 
-			    {translation,      TranslatedFormatStr}, 
-			    {original_vars,    Vars1}, 
-			    {translation_vars, Vars2}} | Acc];
-		      {_,Suspect,_} when Suspect > 0 ->
-			  [{"Warning - translation dosen't use some var(s)"
-			    "this is ok but may indicate a error",
-			    {lang,             Lang},
-			    {unused_vars,      OkButSuspect},
-			    {original,         OriginalFormatStr}, 
-			    {translation,      TranslatedFormatStr}, 
-			    {original_vars,    Vars1}, 
-			    {translation_vars, Vars2}} | Acc];
-		      {Ok,_,_} when Ok == length(Vars1)  ->
-			  Acc
-		  end
-	  end,
-	  [], gettext_db_ets),
-
-    %% ------------------
-    BadFTXT = 
-	ets:foldl(
-	  %%    ignore meta data entries like 'header_info'
-	  fun({{Info, _Lang}, _}, Acc) when is_atom(Info) -> 
-		  Acc;
-
-	     %% check strings only
-	     ({{OriginalFormatStr, Lang}, TranslatedFormatStr}, Acc) -> 
-		  Tags1 = get_format_tags(OriginalFormatStr),
-		  Tags2 = get_format_tags(TranslatedFormatStr),
-		  case Tags1 == Tags2 of
-		      true -> Acc;
-		      false -> [{"ERROR - format string missmatch",
-				 {lang,             Lang},
-				 {original,         OriginalFormatStr}, 
-				 {translation,      TranslatedFormatStr}, 
-				 {original_tags,    Tags1}, 
-				 {translation_tags, Tags2}} | Acc]
-		  end
-	  end,
-	  [], gettext_db_ets),
-    
-    io:format("--------------------------\n"
-	      "BAD ?STXT format strings  \n"
-	      "--------------------------\n"
-	      "~p\n", [BadSTXT]),
-
-    io:format("--------------------------\n"
-	      "BAD ?FTXT format strings  \n"
-	      "--------------------------\n"
-	      "~p\n", [BadFTXT]),
-    ok.
-    
-
-%% ----------------------------------------------------------------------------
 %% Extract the $....$ texts from a ?STXT format string
 %% return: [string()] - the names of the $...$ tags, sorted and unique entries
 %%         only
@@ -222,17 +121,4 @@ get_vars3([], _, _) ->
     throw("$...$ tag is missing ending $").
 
 
-%% ----------------------------------------------------------------------------
-%% Naive io format "~..." detector - should mostly work as most FTXT entries 
-%% only use ~s and occasionaly ~p  
-get_format_tags(IoFormatStr) ->
-    get_format_tags(IoFormatStr, []).
-
-get_format_tags([], Tags) -> lists:reverse(Tags);
-get_format_tags([_C], Tags) -> lists:reverse(Tags);
-
-get_format_tags([$~, C| R], Tags) -> get_format_tags(R, [C|Tags]);
-get_format_tags([_C|R], Tags) -> get_format_tags(R, Tags).
-    
-    
 

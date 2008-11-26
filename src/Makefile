@@ -8,6 +8,8 @@ MODULES=gettext \
 	gettext_compile \
 	gettext_format \
 	gettext_server \
+	gettext_validate \
+	gettext_yaws_html \
 	gettext_checker \
 	gettext_sup \
 	gettext_app \
