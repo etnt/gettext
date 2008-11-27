@@ -50,6 +50,14 @@
 %%                        time).
 %%                        Each (language) po file should usualy have one such 
 %%                        ignore file.
+%%
+%%       Ignore formats:
+%%       * {no_translation, MsgId, MsgStr}
+%%       * {bad_ftxt, MsgId, MsgStr}
+%%       * {bad_stxt, MsgId, MsgStr}
+%%       * {bad_ws, MsgId, MsgStr}
+%%       * {bad_punctuation, MsgId, MsgStr}
+%%       * {bad_html, MsgId, MsggStr}
 %% @end------------------------------------------------------------------------
 validate(PoFilePath) ->
     validate(PoFilePath, "").
@@ -69,7 +77,12 @@ validate(PoFilePath, IgnoreFilePath) ->
     %% catch exceptions so that ets table is always cleaned up
     try
 	%% fill ets table with ignore data for fast lookup
-	lists:foreach(fun(E) -> ets:insert(Ignores, {E}) end, Terms),
+	lists:foreach(fun(E) -> 
+			      case is_valid_ignore_entry(E) of
+				  true  -> ets:insert(Ignores, {E});
+				  false -> throw({invalid_ignore_file_entry, E})
+			      end
+		      end, Terms),
 	
 	%% get file and discard non-text meta data header
 	[{header_info, _} | Trans] = 
@@ -88,6 +101,25 @@ validate(PoFilePath, IgnoreFilePath) ->
 	ets:delete(Ignores)
     end,
     ok.
+
+%% is_list/1 = is_string/1 check
+is_valid_ignore_entry(E) -> 
+    case E of
+	{no_translation, MsgId, MsgStr} 
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_ftxt, MsgId, MsgStr}
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_stxt, MsgId, MsgStr}
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_ws, MsgId, MsgStr}
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_punctuation, MsgId, MsgStr}
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_html, MsgId, MsgStr}
+	when is_list(MsgId), is_list(MsgStr) -> true;
+	_ ->
+	    false
+    end.
 
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -190,7 +222,7 @@ count(BadEntries) ->
 
 
 look_for_bad_stxt({OriginalFormatStr, TranslatedFormatStr}, 
-		  _Ignores, Acc) -> 
+		  Ignores, Acc) -> 
     %% XXX $ in non-STXT format strings isn't handle this may result 
     %%     in crashes !!! 
 
@@ -206,49 +238,63 @@ look_for_bad_stxt({OriginalFormatStr, TranslatedFormatStr},
     
     case {length(InterSect), length(OkButSuspect), length(BadVars)} of
 	{_,Suspect,Bad} when (Bad > 0) and (Suspect > 0) ->
-	    [{'ERROR', 
-	      "Translation contains unknown var(s) "
-	      "as well as unused var(s) (unused var(s) may be ok).",
-	      {bad_vars,         BadVars},
-	      {unused_vars,      OkButSuspect},
-	      {original,         OriginalFormatStr}, 
-	      {translation,      TranslatedFormatStr}, 
-	      {original_vars,    Vars1}, 
-	      {translation_vars, Vars2}} | Acc];
+	    do_ignore(Ignores,
+		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
+		      {'ERROR', 
+		       "Translation contains unknown var(s) "
+		       "as well as unused var(s) (not using var(s) from msgid "
+		       "may be ok).",
+		       {bad_vars,         BadVars},
+		       {unused_vars,      OkButSuspect},
+		       {original,         OriginalFormatStr}, 
+		       {translation,      TranslatedFormatStr}, 
+		       {original_vars,    Vars1}, 
+		       {translation_vars, Vars2}},
+		      Acc);
 	{_,_,Bad} when Bad > 0 ->
-	    [{'ERROR',
-	      "Translation contains unknown var(s).",
-	      {bad_vars,         BadVars},
-	      {original,         OriginalFormatStr}, 
-	      {translation,      TranslatedFormatStr}, 
-	      {original_vars,    Vars1}, 
-	      {translation_vars, Vars2}} | Acc];
+	    do_ignore(Ignores,
+		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
+		      {'ERROR',
+		       "Translation contains unknown var(s).",
+		       {bad_vars,         BadVars},
+		       {original,         OriginalFormatStr}, 
+		       {translation,      TranslatedFormatStr}, 
+		       {original_vars,    Vars1}, 
+		       {translation_vars, Vars2}},
+		      Acc);
 	{_,Suspect,_} when Suspect > 0 ->
-	    [{'Warning',
-	      "Translation dosen't use some var(s) this is ok but may "
-	      "indicate a error.",
-	      {unused_vars,      OkButSuspect},
-	      {original,         OriginalFormatStr}, 
-	      {translation,      TranslatedFormatStr}, 
-	      {original_vars,    Vars1}, 
-	      {translation_vars, Vars2}} | Acc];
+	    do_ignore(Ignores,
+		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
+		      {'Warning',
+		       "Translation dosen't use some var(s) this is ok but may "
+		       "indicate a error.",
+		       {unused_vars,      OkButSuspect},
+		       {original,         OriginalFormatStr}, 
+		       {translation,      TranslatedFormatStr}, 
+		       {original_vars,    Vars1}, 
+		       {translation_vars, Vars2}},
+		      Acc);
 	{Ok,_,_} when Ok == length(Vars1)  ->
 	    Acc
     end.
 
 
-look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, _Ignores, Acc) ->
+look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
     %% check strings only
     Tags1 = get_format_tags(OriginalFormatStr),
     Tags2 = get_format_tags(TranslatedFormatStr),
     case Tags1 == Tags2 of
 	true -> Acc;
-	false -> [{'ERROR',
-		   "Format string missmatch.",
-		   {original,         OriginalFormatStr}, 
-		   {translation,      TranslatedFormatStr}, 
-		   {original_tags,    Tags1}, 
-		   {translation_tags, Tags2}} | Acc]
+	false -> 
+	    do_ignore(Ignores,
+		      {bad_ftxt, OriginalFormatStr, TranslatedFormatStr},
+		      {'ERROR',
+		       "Format string missmatch.",
+		       {original,         OriginalFormatStr}, 
+		       {translation,      TranslatedFormatStr}, 
+		       {original_tags,    Tags1}, 
+		       {translation_tags, Tags2}},
+		      Acc)
     end.
 
 
@@ -266,26 +312,32 @@ look_for_no_translation({OriginalFormatStr, TranslatedFormatStr},
     end.
 
 
-look_for_bad_ws({OriginalFormatStr, TranslatedFormatStr}, _Ignores, Acc) ->
+look_for_bad_ws({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
     FrontMatch = ws_match(OriginalFormatStr, TranslatedFormatStr),
     ORev = lists:reverse(OriginalFormatStr),
     TRev = lists:reverse(TranslatedFormatStr),
     TailMatch  = ws_match(ORev, TRev),
 
     Acc2 = case TailMatch of
-	       false -> [{'ERROR',
-			  "Whitespaces differ at string tail.",
-			  {original,    OriginalFormatStr}, 
-			  {translation, TranslatedFormatStr}
-			 }] ++ Acc;
+	       false -> 
+		   do_ignore(Ignores, 
+			     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
+			     {'ERROR',
+			      "Whitespaces differ at string tail.",
+			      {original,    OriginalFormatStr}, 
+			      {translation, TranslatedFormatStr}}, 
+			     Acc);
 	       true -> Acc
     end,
     Acc3 = case FrontMatch of
-	       false -> [{'ERROR',
-			  "Whitespaces differ at string front.",
-			  {original,    OriginalFormatStr}, 
-			  {translation, TranslatedFormatStr}
-			 }] ++ Acc2;
+	       false -> 
+		   do_ignore(Ignores,
+			     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
+			     {'ERROR',
+			      "Whitespaces differ at string front.",
+			      {original,    OriginalFormatStr}, 
+			      {translation, TranslatedFormatStr}},
+			     Acc2);
 	       true -> Acc2
     end,
     Acc3.
@@ -325,7 +377,7 @@ is_ws(_) -> false.
 %%       punctuation if unicode is supported or when languages with unusal
 %%       punctuation rules is used in the po file 
 look_for_bad_punctuation({OriginalFormatStr, TranslatedFormatStr}, 
-			 _Ignores, Acc) ->
+			 Ignores, Acc) ->
     case text_with_no_ws_front(lists:reverse(OriginalFormatStr), 
 			       lists:reverse(TranslatedFormatStr)) of
 
@@ -335,8 +387,10 @@ look_for_bad_punctuation({OriginalFormatStr, TranslatedFormatStr},
 
 	%% trailing white spaces are the same
 	{[], []} -> Acc;
-	{[], R2} -> bad_punct(R2, OriginalFormatStr, TranslatedFormatStr, Acc);
-	{R1, []} -> bad_punct(R1, OriginalFormatStr, TranslatedFormatStr, Acc);
+	{[], R2} -> bad_punct(R2, OriginalFormatStr, TranslatedFormatStr, 
+			      Ignores, Acc);
+	{R1, []} -> bad_punct(R1, OriginalFormatStr, TranslatedFormatStr, 
+			      Ignores, Acc);
 	{R1, R2} ->
 	    C1 = hd(R1),
 	    C2 = hd(R2),
@@ -351,23 +405,29 @@ look_for_bad_punctuation({OriginalFormatStr, TranslatedFormatStr},
 	    case GoodPunct of
 		true  -> Acc;
 		false ->
-		    [{'Warning',
-		      "Trailing punctuation is missmatched.",
-		      {original,    OriginalFormatStr}, 
-		      {translation, TranslatedFormatStr}
-		     } | Acc]
+		    do_ignore(Ignores,
+			      {bad_punctuation, OriginalFormatStr, 
+			       TranslatedFormatStr},
+			      {'Warning',
+			       "Trailing punctuation is missmatched.",
+			       {original,    OriginalFormatStr}, 
+			       {translation, TranslatedFormatStr}},
+			      Acc)
 	    end
     end.
 
 %% helper function 
-bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Acc) ->
+bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Ignores, Acc) ->
     P = is_punct(hd(R)),
     case P of
-	true -> [{'Warning',
-		  "Trailing punctuation is missmatched.",
-		  {original,    OriginalFormatStr}, 
-		  {translation, TranslatedFormatStr}
-		 } | Acc];
+	true -> 
+	    do_ignore(Ignores,
+		      {bad_punctuation, OriginalFormatStr, TranslatedFormatStr},
+		      {'Warning',
+		       "Trailing punctuation is missmatched.",
+		       {original,    OriginalFormatStr}, 
+		       {translation, TranslatedFormatStr}},
+		      Acc);
 	false ->
 	     Acc
     end.
@@ -387,12 +447,22 @@ is_punct(C) ->
 
 %% ----------------------------------------------------------------------------
 look_for_bad_html({OriginalFormatStr, TranslatedFormatStr}, 
-		  _Ignores, Acc) ->
+		  Ignores, Acc) ->
     %% convert to ehtml
     Oehtml = gettext_yaws_html:h2e(OriginalFormatStr),
     Tehtml = gettext_yaws_html:h2e(TranslatedFormatStr),
-    look_for_bad_tags(Oehtml, Tehtml, Acc, 
-		      {OriginalFormatStr, TranslatedFormatStr}).
+    LocalAcc = look_for_bad_tags(Oehtml, Tehtml, [], 
+				 {OriginalFormatStr, TranslatedFormatStr}),
+
+    %% check if any errors/warings should be ignored
+    F = fun(E, Acc2) ->
+		do_ignore(Ignores,
+			  {bad_html, OriginalFormatStr, TranslatedFormatStr},
+			  E,
+			  Acc2)
+	end,
+    lists:foldl(F, [], LocalAcc) ++ Acc.
+
 
 
 %% Note: only the first error of each branch is reported.
@@ -512,15 +582,13 @@ look_for_bad_tags([], Char2, Acc, _)
 %% ehtml trees differ
 look_for_bad_tags(E1, E2, Acc, Info) ->
     {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'ERROR', 
-      "Ehtml (yaws_html.erl) parse trees differ.",
+    [{'Warning', 
+      "Html tag nesting structure differs.",
       {original,    OriginalFormatStr}, 
       {translation, TranslatedFormatStr},
       {original_tree, E1},
       {translation_tree, E2}} | Acc].
 
-
-    
 
 %% ----------------------------------------------------------------------------
 %% Naive io format "~..." detector - should mostly work as most FTXT entries 
