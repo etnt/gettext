@@ -167,6 +167,11 @@ format_results(PoFilePath, BadEntries,
 	      " Total - ~s\n"
 	      "===========================================\n", 
 	      [PoFilePath, format_count(BadEntries)]),
+
+    io:format("-------------------------------------------\n"
+	      "Untranslated (~s) \n"
+	      "-------------------------------------------\n"
+	      "~p\n", [format_count(NoTrans), NoTrans]),
     
     io:format("-------------------------------------------\n"
 	      "BAD ?STXT format strings (~s) \n"
@@ -177,11 +182,6 @@ format_results(PoFilePath, BadEntries,
 	      "BAD ?FTXT format strings (~s) \n"
 	      "-------------------------------------------\n"
 	      "~p\n", [format_count(BadFTXT), BadFTXT]),
-
-    io:format("-------------------------------------------\n"
-	      "Untranslated (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(NoTrans), NoTrans]),
 
     io:format("-------------------------------------------\n"
 	      "Incorrect whitespace usage (~s) \n"
