@@ -76,7 +76,7 @@ display_errors() ->
 %% to pick up numbers with actions associated to them 
  
 dialog() ->
-    LC = gettext_server:default_lang(),
+    LC = gettext:default_lang(),
     io:format("Language set to: ~s~n", [iso639:lc2lang(LC)]),
     dialog(LC).
 
@@ -1047,7 +1047,7 @@ get_new_value(Similar,ProperVal) ->
 %% This function returns all languages that are in the system, based on the 
 %% content of the ../gettext/priv/lang directory   
 all_langs() ->
-    gettext_server:all_lang() -- [gettext_server:default_lang()].
+    gettext:all_lang() -- [gettext:default_lang()].
 
 %%    CustomPath = filename:join(?ROOT_DIR,?CUSTOM_DIR),
 %%    {ok,AllCustom} = file:list_dir(CustomPath),    
