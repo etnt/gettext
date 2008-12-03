@@ -9,6 +9,13 @@ MODULES=gettext \
 	gettext_format \
 	gettext_server \
 	gettext_validate \
+	gettext_validate_no_trans \
+	gettext_validate_bad_case \
+	gettext_validate_bad_punct \
+	gettext_validate_bad_ftxt \
+	gettext_validate_bad_stxt \
+	gettext_validate_bad_html \
+	gettext_validate_bad_ws \
 	gettext_yaws_html \
 	gettext_checker \
 	gettext_sup \

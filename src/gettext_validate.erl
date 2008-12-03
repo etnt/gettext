@@ -4,15 +4,54 @@
 %%      This validator assumes the po file to be valid (parsable without 
 %%      errors by gettext/poEdit/GNU po file tools).
 %%      Its use is to check for errors introduced by translators in the 
-%%      msgstr part in the po file. Each msgid-msgstr is checked for the 
-%%      following:
+%%      msgstr part in the po file, this is done by supplying checker callback
+%%      module names, to the validate(...) function.
 %%
-%%      * incorrect FTXT argument usage
+%%      A number of default checkers that should work on most texts, can check
+%%      for:
+%%
+%%   ```* incorrect FTXT argument usage
 %%      * incorrect STXT argument usage
 %%      * incorrect whitespace at front/tail of text
 %%      * missing translations
 %%      * incorrect punctuation at the end of texts
 %%      * changes in HTML structure, tag names and attributes used
+%%      * inconsistent usage of case at begining of text
+%%''' 
+%% ==A checker must implement: ==
+%%
+%% `ignore_entry_type() -> atom().'
+%%
+%%  Return the typename to use in the ignore file.
+%%
+%% `heading() -> string().'
+%%
+%%  Return a short text used as heading, when listing errors/warnings for this
+%%  checker.
+%%
+%% `check({OriginalFormatStr::string(), TranslatedFormatStr::string()}, 
+%%         Ignores, Acc::[acc()]) -> UpdatedAcc::[acc()]'
+%%
+%%  Returns a updated accumualtor UpdatedAcc after checking
+%%  OriginalFormatStr against TranslatedFormatStr, one or more entries must be
+%%  added to the head of Acc if problems are found.
+%%  Ignores contains a ets table reference used by 
+%%  gettext_validate:do_ignore(...) to check if the error/warning should be
+%%  reported - this filtering should be done after the check, so that the code
+%%  crashes if the checker is broken, ignore files could otherwise hide broken
+%%  checks.
+%%
+%%  Each acc() must be of the format:
+%%```{alert_level(), 
+%%   ErrorMsg::string(), 
+%%   Pairs::{Name::atom(), Info::term()} ....} 
+%%
+%%   alert_level() = 'ERROR'   (error that may crash e.g. STXT/FTXT or generate
+%%                              invalid output)
+%%                 | 'Warning' (probably a error)
+%%   Pairs - contain check specific error information, usualy at least the
+%%   msgid and msgstr so that they can be found in a po file and fixed.
+%%'''
 
 -module(gettext_validate).
 
@@ -20,33 +59,54 @@
 %% External exports
 %%-----------------------------------------------------------------------------
 -export ([
-	  validate/1,
-	  validate/2,
-	  validate/3
+	  %% the validator
+	  validate/3,
+
+	  %% use standard default checkers that should work on most texts
+	  validate_q/1,
+	  validate_q/2,
+	  validate_qf/2,
+	  validate_qf/3,
+
+	  %% help functions for callback modules
+	  do_ignore/4,
+
+	  %% this may be useful when defining your own opts, e.g. when adding
+	  %% new checks
+	  default_opts/0
 	 ]).  
 
-%% ----------------------------------------------------------------------------
--define(IS_CHAR(Char), 
-	is_integer(Char), ((Char >= 0) andalso (Char =< 255))).
 
 %%=============================================================================
 %% External functions
 %%=============================================================================
 
+%% ---------------------
+%% validate "quick" - with default checkers
+
+%% no ignores or opts
+validate_q(PoFilePath) ->
+    validate(PoFilePath, "", default_opts()).
+
+%% no opts 
+validate_q(PoFilePath, IgnoreFilePath) ->
+    validate(PoFilePath, IgnoreFilePath, default_opts()).
+
+%% ---------------------
+%% validate "quick" to file - with default checkers
+
+%% no ignores or opts
+validate_qf(PoFilePath, SaveFile) ->
+    validate(PoFilePath, "", default_opts() ++ [{to_file, SaveFile}]).
+
+%% no opts 
+validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
+    validate(PoFilePath, IgnoreFilePath, 
+	     default_opts() ++ [{to_file, SaveFile}]).
+
+
 %% ----------------------------------------------------------------------------
-%% @spec validate(PoFilePath::string()) -> ok 
-%% @equiv validate(PoFilePath, "")
-
-validate(PoFilePath) ->
-    validate(PoFilePath, "").
-
-%% @spec validate(PoFilePath::string(), IgnoreFilePath::string()) -> ok 
-%% @equiv validate(PoFilePath, IgnoreFilePath, [])
-
-validate(PoFilePath, IgnoreFilePath) ->
-    validate(PoFilePath, IgnoreFilePath, []).
-
-%% @spec validate(PoFilePath::string(), IgnoreFilePath::string(),
+%% @spec validate(PoFilePath::string(), IgnoreFilePath::[]|string(),
 %%                Opts::[{Key, Val}]) -> ok 
 %% @doc  Takes a valid (parsable) po file and checks that there are no 
 %%       inconsistencies between the msgid and msgstr texts. E.g.,
@@ -55,33 +115,20 @@ validate(PoFilePath, IgnoreFilePath) ->
 %% 
 %%       The function prints a result listing.
 %% 
-%%       `PoFilePath'   - the po file check
-%% 
-%%       `IgnoreFilePath' - an optional file that can be used to specify 
-%%                        {CheckType, MsgId, MsgStr} combinations that
-%%                        should not be reported as errors/warnings -
-%%                        there are cases especially for warnings that
-%%                        may be valid translations that just look
-%%                        suspect (i.e., are errors 90% of the time).
-%%                        Each (language) po file should usualy have one
-%%                        such ignore file.
-%% 
-%%       Opts:
-%%       `{to_file, SaveLocation}' - output result to file
+%%       `PoFilePath'     - the po file check
 %%
-%%       Ignore formats:
-%%       <ul>
-%%         <li>{no_translation, MsgId, MsgStr}</li>
-%%         <li>{bad_ftxt, MsgId, MsgStr}</li>
-%%         <li>{bad_stxt, MsgId, MsgStr}</li>
-%%         <li>{bad_ws, MsgId, MsgStr}</li>
-%%         <li>{bad_punctuation, MsgId, MsgStr}</li>
-%%         <li>{bad_html, MsgId, MsgStr}</li>
-%%         <li>{bad_case, MsgId, MsgStr}</li>
-%%       </ul>
-%% @end
-%% --------------------------------------------------------------------------
-
+%%       `IgnoreFilePath' - a optional file that can be used to specify 
+%%                          {CheckType, MsgId, MsgStr} combinations that should
+%%                          not be reported as a errors/warnings - false 
+%%                          positives.
+%%                          Each (language) po file should usualy have one such 
+%%                          ignore file.
+%%
+%%       `Opts:'
+%%``` {to_file, SaveLocation} - output result to file
+%%    {checkers, ModuleNames} - checkers to use, ModuleNames = [atom()]
+%%'''
+%% @end------------------------------------------------------------------------
 validate(PoFilePath, IgnoreFilePath, Opts) ->
     Terms = 
 	case IgnoreFilePath of
@@ -97,7 +144,7 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
     %% catch exceptions so that ets table is always cleaned up
     try
 	%% fill ets table with ignore data for fast lookup
-	lists:foreach(fun(E) -> 
+		lists:foreach(fun(E) -> 
 			      case is_valid_ignore_entry(E) of
 				  true  -> ets:insert(Ignores, {E});
 				  false -> throw({invalid_ignore_file_entry, E})
@@ -110,13 +157,14 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 	catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	end,
 	
-	{BadEntries, CheckResults} = run_checks(Ignores, Trans),
-	ResultText = format_results(PoFilePath, BadEntries, CheckResults),
-	case Opts of
-	    [{to_file, SaveLocation}] ->
-		write_to_file(ResultText, SaveLocation);
-	    _ ->
-		io:format("~s~n", [ResultText])
+	Callbacks = look_up(checkers, Opts),
+	CheckResults = run_checks(Ignores, Trans, Callbacks),
+	ResultText = format_results(PoFilePath, CheckResults, Callbacks),
+	case look_up(to_file, Opts) of
+	    [] ->
+		io:format("~s~n", [ResultText]);
+	    SaveLocation ->
+		write_to_file(ResultText, SaveLocation)
 	end
 	
     catch _:Reason2 -> 
@@ -127,22 +175,15 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
     end,
     ok.
 
+%% Check that ignore file looks usable - we don't check the ignore type to 
+%% allow for ignore files used with other sets of checker callback modules 
 %% is_list/1 = is_string/1 check
-is_valid_ignore_entry(E) -> 
+%% get IgnoreTypes from ignore_types/1
+is_valid_ignore_entry(E) ->
     case E of
-	{no_translation, MsgId, MsgStr} 
-	when is_list(MsgId), is_list(MsgStr) -> true;
-
-	{bad_ftxt, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_stxt, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_ws, MsgId, MsgStr}	when is_list(MsgId), is_list(MsgStr) -> true;
-
-	{bad_punctuation, MsgId, MsgStr}
-	when is_list(MsgId), is_list(MsgStr) -> true;
-
-	{bad_html, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_case, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
-
+	{Type, MsgId, MsgStr} when is_atom(Type), 
+				   is_list(MsgId), is_list(MsgStr) ->
+	    true;
 	_ ->
 	    false
     end.
@@ -151,95 +192,60 @@ is_valid_ignore_entry(E) ->
 write_to_file(ResultText, SaveLocation) ->
     ok = file:write_file(SaveLocation, ResultText).
 
+%% return: Val | not_found
+look_up(Key, Opts) -> 
+    case lists:keysearch(Key, 1, Opts) of
+	{value, {Key, Val}} -> Val;
+	false -> []
+    end.
+
+default_opts() ->
+    [{checkers, [gettext_validate_no_trans,
+		 gettext_validate_bad_case,
+		 gettext_validate_bad_punct,
+		 gettext_validate_bad_ftxt,  
+		 gettext_validate_bad_stxt,
+		 gettext_validate_bad_html,
+		 gettext_validate_bad_ws]}
+     ].
+
+
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-run_checks(Ignores, Trans) ->
+run_checks(Ignores, Trans, Callbacks) ->
     %% Each check runs independetly of all others - no data is retained between
     %% them this makes it easy to add more tests without breaking stuff.
-    BadSTXT = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_stxt(TxtPair, Ignores, Acc)
-			  end, [], Trans),
 
-    BadFTXT = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_ftxt(TxtPair, Ignores, Acc)
-			  end, [], Trans),
-
-    NoTrans = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_no_translation(TxtPair, Ignores,
-							  Acc)
-			  end, [], Trans),
-
-    BadWS = lists:foldl(fun(TxtPair, Acc) -> 
-				look_for_bad_ws(TxtPair, Ignores, Acc) 
-			end, [], Trans),
-
-    BadPunct = lists:foldl(fun(TxtPair, Acc) -> 
-				   look_for_bad_punctuation(
-				     TxtPair, Ignores, Acc)
-			   end, [], Trans),
-
-    BadHtml = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_html(
-				    TxtPair, Ignores, Acc)
-			  end, [], Trans),
-    BadCase = lists:foldl(fun(TxtPair, Acc) -> 
-				  look_for_bad_case(
-				    TxtPair, Ignores, Acc)
-			  end, [], Trans),
-
-    
-    BadEntries = lists:flatten([BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, 
-				BadHtml, BadCase]),
-    {BadEntries, 
-     [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml, BadCase]}.
+    %% get one entry (of [bad()]) for each check
+    [lists:foldl(fun(TxtPair, Acc) -> 
+			 Callback:check(TxtPair, Ignores, Acc)
+		 end, [], Trans) || Callback <- Callbacks].
 
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 %% return: io_list() 
-format_results(PoFilePath, BadEntries, 
-	       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml, 
-		BadCase]) ->
+format_results(PoFilePath, BadL, Callbacks) 
+  when length(BadL) == length(Callbacks) ->
+    BadEntries = lists:flatten(BadL),
+    
     [
-     io_lib:format("===========================================\n"
+     io_lib:format("=======================================================\n"
 		   " Checking: ~s\n"
 		   " Total - ~s\n"
-		   "===========================================\n", 
-		   [PoFilePath, format_count(BadEntries)]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "Untranslated (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(NoTrans), NoTrans]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "BAD ?STXT format strings (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadSTXT), BadSTXT]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "BAD ?FTXT format strings (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadFTXT), BadFTXT]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "Incorrect whitespace usage (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadWS), BadWS]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "Inconsistent punctuation (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadPunct), BadPunct]),
-     
-     io_lib:format("-------------------------------------------\n"
-		   "Changes in html (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadHtml), BadHtml]),
+		   "=======================================================\n", 
+		   [PoFilePath, format_count(BadEntries)])
+    ] ++ 
 
-     io_lib:format("-------------------------------------------\n"
-		   "Inconsistent case at start (~s) \n"
-		   "-------------------------------------------\n"
-		   "~p\n", [format_count(BadCase), BadCase])
-    ].
+	[
+	 io_lib:format(
+	   "-------------------------------------------------------\n"
+	   "~s (~s) \n"
+	   "ignore type: ~p (use this in the ignore file)\n"
+	   "-------------------------------------------------------\n"
+	   "~p\n", [Callback:heading(), format_count(Bad), 
+		    Callback:ignore_entry_type(),
+		    Bad]) ||
+	    {Callback, Bad} <- lists:zip(Callbacks, BadL)].
+
 
 %% return: io_list()
 format_count(BadEntries) ->
@@ -256,453 +262,6 @@ count(BadEntries) ->
 	end,
     lists:foldl(F, {0,0}, BadEntries).
 		
-			
-
-%% ----------------------------------------------------------------------------
-%% each callback call may add a {ErrorType, ErrorText, .....} tuple in the 
-%% lists:foldl/3 iteration. 
-
-
-look_for_bad_stxt({OriginalFormatStr, TranslatedFormatStr}, 
-		  Ignores, Acc) -> 
-    %% XXX $ in non-STXT format strings isn't handle this may result 
-    %%     in crashes !!! 
-
-    %% check strings only
-    Vars1 = gettext_format:get_vars_in_format_str(OriginalFormatStr),
-    Vars2 = gettext_format:get_vars_in_format_str(TranslatedFormatStr),
-    
-    InterSect = lists_ext:intersection(Vars1, Vars2),
-    %% some $...$ are unused
-    OkButSuspect = lists_ext:subtract(Vars1, Vars2),
-    %% translation contains unkown $...$
-    BadVars      = lists_ext:subtract(Vars2, Vars1),
-    
-    case {length(InterSect), length(OkButSuspect), length(BadVars)} of
-	{_,Suspect,Bad} when (Bad > 0) and (Suspect > 0) ->
-	    do_ignore(Ignores,
-		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
-		      {'ERROR', 
-		       "Translation contains unknown var(s) "
-		       "as well as unused var(s) (not using var(s) from msgid "
-		       "may be ok).",
-		       {bad_vars,         BadVars},
-		       {unused_vars,      OkButSuspect},
-		       {original,         OriginalFormatStr}, 
-		       {translation,      TranslatedFormatStr}, 
-		       {original_vars,    Vars1}, 
-		       {translation_vars, Vars2}},
-		      Acc);
-	{_,_,Bad} when Bad > 0 ->
-	    do_ignore(Ignores,
-		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
-		      {'ERROR',
-		       "Translation contains unknown var(s).",
-		       {bad_vars,         BadVars},
-		       {original,         OriginalFormatStr}, 
-		       {translation,      TranslatedFormatStr}, 
-		       {original_vars,    Vars1}, 
-		       {translation_vars, Vars2}},
-		      Acc);
-	{_,Suspect,_} when Suspect > 0 ->
-	    do_ignore(Ignores,
-		      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
-		      {'Warning',
-		       "Translation dosen't use some var(s) this is ok but may "
-		       "indicate a error.",
-		       {unused_vars,      OkButSuspect},
-		       {original,         OriginalFormatStr}, 
-		       {translation,      TranslatedFormatStr}, 
-		       {original_vars,    Vars1}, 
-		       {translation_vars, Vars2}},
-		      Acc);
-	{Ok,_,_} when Ok == length(Vars1)  ->
-	    Acc
-    end.
-
-
-look_for_bad_ftxt({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
-    %% check strings only
-    Tags1 = get_format_tags(OriginalFormatStr),
-    Tags2 = get_format_tags(TranslatedFormatStr),
-    case Tags1 == Tags2 of
-	true -> Acc;
-	false -> 
-	    do_ignore(Ignores,
-		      {bad_ftxt, OriginalFormatStr, TranslatedFormatStr},
-		      {'ERROR',
-		       "Format string missmatch.",
-		       {original,         OriginalFormatStr}, 
-		       {translation,      TranslatedFormatStr}, 
-		       {original_tags,    Tags1}, 
-		       {translation_tags, Tags2}},
-		      Acc)
-    end.
-
-
-look_for_no_translation({OriginalFormatStr, TranslatedFormatStr}, 
-			Ignores, Acc) ->
-    case OriginalFormatStr == TranslatedFormatStr of
-	false -> Acc;
-	true  -> 
-	    do_ignore(Ignores, 
-		      {no_translation, OriginalFormatStr, TranslatedFormatStr}, 
-		      {'Warning',
-		       "Text appears to be untranslated. Add it to .ignore "
-		       "file if valid trans. but msgid = msgstr",
-		       {text, OriginalFormatStr}}, 
-		      Acc)
-    end.
-
-
-look_for_bad_ws({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
-    FrontMatch = ws_match(OriginalFormatStr, TranslatedFormatStr),
-    ORev = lists:reverse(OriginalFormatStr),
-    TRev = lists:reverse(TranslatedFormatStr),
-    TailMatch  = ws_match(ORev, TRev),
-
-    Acc2 = case TailMatch of
-	       false -> 
-		   do_ignore(Ignores, 
-			     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
-			     {'ERROR',
-			      "Whitespaces differ at string tail.",
-			      {original,    OriginalFormatStr}, 
-			      {translation, TranslatedFormatStr}}, 
-			     Acc);
-	       true -> Acc
-    end,
-    Acc3 = case FrontMatch of
-	       false -> 
-		   do_ignore(Ignores,
-			     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
-			     {'ERROR',
-			      "Whitespaces differ at string front.",
-			      {original,    OriginalFormatStr}, 
-			      {translation, TranslatedFormatStr}},
-			     Acc2);
-	       true -> Acc2
-    end,
-    Acc3.
-
-
-%% ----------------------------------------------------------------------------
-%% return: {L1, L2} | 
-%%         ws_missmatch (when initial whitespace differ)
-text_with_no_ws_front([],[]) -> {[],[]};
-text_with_no_ws_front([], _) -> ws_missmatch; % different no. of whitespaces
-text_with_no_ws_front(_ ,[]) -> ws_missmatch; % different no. of whitespaces
-text_with_no_ws_front([C1|R1] = L1, [C2|R2] = L2) ->
-    W1 = is_ws(C1), 
-    W2 = is_ws(C2),
-    case {C1, C2, W1, W2} of
-	{C, C, true,  true}  -> text_with_no_ws_front(R1,R2);
-	{_, _, true,  false} -> ws_missmatch; % different no. of whitespaces
-	{_, _, false, true}  -> ws_missmatch; % different no. of whitespaces
-	{_, _, false, false} -> {L1, L2}
-    end.
-
-%% do whitespaces match - bool()
-ws_match(R1,R2) -> 
-    case text_with_no_ws_front(R1,R2) of
-	{_,_}        -> true;
-	ws_missmatch -> false
-    end.
-
-%%  is whitespace (control char or space/nbsp/NL/CR/...)
-is_ws(C) when (C =< 32) orelse ((C >= 127) andalso (C =< 160)) -> true;
-is_ws(_) -> false.
-
-
-%% ----------------------------------------------------------------------------
-%% Compare trailing punctuation between orginal and translation
-%% Note: these tests may need to be relaxed or map between different sets of
-%%       punctuation if unicode is supported or when languages with unusal
-%%       punctuation rules is used in the po file 
-look_for_bad_punctuation({OriginalFormatStr, TranslatedFormatStr}, 
-			 Ignores, Acc) ->
-    case text_with_no_ws_front(lists:reverse(OriginalFormatStr), 
-			       lists:reverse(TranslatedFormatStr)) of
-
-	%% look_for_bad_ws(...) will warn about whitespace missmatch
-	%% so assume that user will find any punctuation bugs on revalidation
-	ws_missmatch  -> Acc; 
-
-	%% trailing white spaces are the same
-	{[], []} -> Acc;
-	{[], R2} -> bad_punct(R2, OriginalFormatStr, TranslatedFormatStr, 
-			      Ignores, Acc);
-	{R1, []} -> bad_punct(R1, OriginalFormatStr, TranslatedFormatStr, 
-			      Ignores, Acc);
-	{R1, R2} ->
-	    C1 = hd(R1),
-	    C2 = hd(R2),
-	    P1 = is_punct(C1),
-	    P2 = is_punct(C2),
-	    GoodPunct = case {P1, P2} of
-			    {true,  true}  -> C1 == C2;
-			    {true,  false} -> false;
-			    {false, true}  -> false;
-			    {false, false} -> true
-			end,
-	    case GoodPunct of
-		true  -> Acc;
-		false ->
-		    do_ignore(Ignores,
-			      {bad_punctuation, OriginalFormatStr, 
-			       TranslatedFormatStr},
-			      {'Warning',
-			       "Trailing punctuation is missmatched.",
-			       {original,    OriginalFormatStr}, 
-			       {translation, TranslatedFormatStr}},
-			      Acc)
-	    end
-    end.
-
-%% helper function 
-bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Ignores, Acc) ->
-    P = is_punct(hd(R)),
-    case P of
-	true -> 
-	    do_ignore(Ignores,
-		      {bad_punctuation, OriginalFormatStr, TranslatedFormatStr},
-		      {'Warning',
-		       "Trailing punctuation is missmatched.",
-		       {original,    OriginalFormatStr}, 
-		       {translation, TranslatedFormatStr}},
-		      Acc);
-	false ->
-	     Acc
-    end.
-
-
-%% return: bool()
-%% Determine if C is a end of scentence/text marker
-%% Note: using unicode will require adding new punctuation markers. 
-%%       The set of punctuation markers is somewhat arbitrary, its main intent
-%%       is to catch plausible errors, at the end of texts that may be joined
-%%       with other texts.
-is_punct(C) ->
-    lists:member(C, ".,;!?:" ++ [161, %% upside down !
-				 191  %% upside down ?
-				]).
-
-%% ----------------------------------------------------------------------------
-%% Try to find texts that should/shouldn't start on upper case depending on
-%% if the text is the start of a scentence or not - swedish text e.g. usualy
-%% only uses upper case at scentence start (and in names).
-
-%% Note: this check assumes latin-1 text
-%% Note: different languages have different rules for when to use upper case
-%%       (in case supporting languages) also note that translations will not
-%%       always start on the same word so they will sometime move a upper case
-%%       word into a (original text) lower case postion
-%%       
-
-look_for_bad_case({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
-    %% only do case checks with non-empty strings
-    case {OriginalFormatStr, TranslatedFormatStr} of
-	{"", ""} -> Acc;
-	{"",  _} -> Acc;
-	{_ , ""} -> Acc;
-	{_ ,  _} -> 
-	    %% check if both strings start with the same case
-	    case case_changed(has_case(hd(OriginalFormatStr)),
-			      has_case(hd(TranslatedFormatStr))) of
-		false -> Acc;
-		true -> do_ignore(Ignores,
-				   {bad_case, OriginalFormatStr, 
-				    TranslatedFormatStr},
-				   {'Warning',
-				    "Text starts with different case.",
-				    {original,    OriginalFormatStr}, 
-				    {translation, TranslatedFormatStr}},
-				   Acc)
-	    end
-    end.
-
-%% return true if case changed i.e. went from upper <-> lower, changing
-%% to/from case_less is not considerd to be a change. 
-case_changed(Case1, Case2) ->
-    case {Case1, Case2} of
-	{upper, lower} -> true;
-	{lower, upper} -> true;
-	_ -> false
-    end.
-	
-
-%% return: upper | lower | 
-%%         case_less (one variant char e.g. numbers, punctuation ...)
-%% note  : ß and y with double dots are technicaly a lower case only letters
-%%         but can in this case checker context be considred to be case less
-%%         as well
-has_case(Char) ->
-    [CU] = text:to_upper([Char]),
-    [CL] = text:to_lower([Char]),
-    case {CU == Char, CL == Char} of
-	{true,  true}  -> case_less; 
-	{true,  false} -> upper;
-	{false, true}  -> lower
-	%% {false, false}    should only happen if to_upper/to_lower is broken
-    end.
-
-%% ----------------------------------------------------------------------------
-look_for_bad_html({OriginalFormatStr, TranslatedFormatStr}, 
-		  Ignores, Acc) ->
-    %% convert to ehtml
-    Oehtml = gettext_yaws_html:h2e(OriginalFormatStr),
-    Tehtml = gettext_yaws_html:h2e(TranslatedFormatStr),
-    LocalAcc = look_for_bad_tags(Oehtml, Tehtml, [], 
-				 {OriginalFormatStr, TranslatedFormatStr}),
-
-    %% check if any errors/warings should be ignored
-    F = fun(E, Acc2) ->
-		do_ignore(Ignores,
-			  {bad_html, OriginalFormatStr, TranslatedFormatStr},
-			  E,
-			  Acc2)
-	end,
-    lists:foldl(F, [], LocalAcc) ++ Acc.
-
-
-
-%% Note: only the first error of each branch is reported.
-%% Note: see yaws.pdf (at http://yaws.hyber.org/) for Ehtml specification
-
-%% -------------
-%% process Body or similar list of tag / non-tag elements
-%% Note: is_tuple(...) => is_ehtml_tag(...)
-
-%% all [EHTML] content processed
-look_for_bad_tags([], [], Acc, _) -> Acc;
-
-%% [EHTML] - E is a tag
-look_for_bad_tags([E|_], [], Acc, Info) when is_tuple(E) -> 
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Tag is missing from the translation (this may be a error)",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {tag, E}} | Acc];
-
-%% [EHTML] - E isn't a tag - ensure that this hold true for R
-look_for_bad_tags([E|R], [], Acc, Info) -> 
-    Acc2 = look_for_bad_tags(E, [], Acc, Info),
-    look_for_bad_tags(R, [], Acc2, Info);
-
-%% [EHTML] - E is a tag
-look_for_bad_tags([], [E|_], Acc, Info) when is_tuple(E) -> 
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Tag has been added to translation (this may be ok)",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {tag, E}} | Acc];
-
-%% [EHTML] - E isn't a tag - ensure that this hold true for R
-look_for_bad_tags([], [E|R], Acc, Info) -> 
-    Acc2 = look_for_bad_tags([], E, Acc, Info),
-    look_for_bad_tags([], R, Acc2, Info);
-
-%% [EHTML] - both trees are non-empty - check first entry for error
-look_for_bad_tags(Ehtml1, Ehtml2, Acc, Info) 
-  when is_list(Ehtml1), is_list(Ehtml2) -> 
-    Acc2 = look_for_bad_tags(hd(Ehtml1), hd(Ehtml2), Acc, Info),
-    look_for_bad_tags(tl(Ehtml1), tl(Ehtml2), Acc2, Info);
-
-
-%% -------------
-%% {Tag, Attrs, Body} - tag and attrs match
-look_for_bad_tags({Tag, Attrs, Body1}, {Tag, Attrs, Body2}, Acc, Info) 
-  when is_atom(Tag), is_list(Attrs) -> 
-    look_for_bad_tags(Body1, Body2, Acc, Info);
-%% {Tag, Attrs, Body} - tag or attrs differ
-look_for_bad_tags({Tag1, Attrs1, _}, {Tag2, Attrs2, _}, Acc, Info) 
-  when is_atom(Tag1), is_list(Attrs1), is_atom(Tag2), is_list(Attrs2) -> 
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Tag or tag attributes differ, even though the html structure "
-      "appears to be the same.",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {original_tag, Tag1},
-      {translation_tag, Tag2},
-      {original_attrs, Attrs1},
-      {translation_attrs, Attrs2}} | Acc];
-
-%% {Tag, Attrs} - tag and attrs match
-look_for_bad_tags({Tag, Attrs}, {Tag, Attrs}, Acc, _)
-  when is_atom(Tag), is_list(Attrs) -> Acc;
-%% {Tag, Attrs} - tag or attrs differ
-look_for_bad_tags({Tag1, Attrs1}, {Tag2, Attrs2}, Acc, Info)
-  when is_atom(Tag1), is_list(Attrs1), is_atom(Tag2), is_list(Attrs2) ->
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Tag or tag attributes differ, even though the html structure "
-      "appears to be the same.",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {original_tag, Tag1},
-      {translation_tag, Tag2},
-      {original_attrs, Attrs1},
-      {translation_attrs, Attrs2}} | Acc];
-
-%% {Tag} - tags match
-look_for_bad_tags({Tag}, {Tag}, Acc, _) when is_atom(Tag) -> Acc;
-%% {Tag} - tags differ
-look_for_bad_tags({Tag1}, {Tag2}, Acc, Info) 
-  when is_atom(Tag1), is_atom(Tag2) ->
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Tags differ, even though the html structure appears to be the same.",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {original_tag, Tag1},
-      {translation_tag, Tag2}} | Acc];
-
-
-%% -------------
-%% binary() - text no ehtml check needed
-look_for_bad_tags(Bin1, Bin2, Acc, _) 
-  when is_binary(Bin1), is_binary(Bin2) -> Acc;
-look_for_bad_tags(Bin1, [], Acc, _) 
-  when is_binary(Bin1) -> Acc;
-look_for_bad_tags([], Bin2, Acc, _) 
-  when is_binary(Bin2) -> Acc;
-
-%% char() - text no ehtml check needed
-look_for_bad_tags(Char1, Char2, Acc, _) 
-  when ?IS_CHAR(Char1), ?IS_CHAR(Char2) -> Acc;
-look_for_bad_tags(Char1, [], Acc, _) 
-  when ?IS_CHAR(Char1) -> Acc;
-look_for_bad_tags([], Char2, Acc, _) 
-  when ?IS_CHAR(Char2) -> Acc;
-
-
-%% -------------
-%% ehtml trees differ
-look_for_bad_tags(E1, E2, Acc, Info) ->
-    {OriginalFormatStr, TranslatedFormatStr} = Info,
-    [{'Warning', 
-      "Html tag nesting structure differs.",
-      {original,    OriginalFormatStr}, 
-      {translation, TranslatedFormatStr},
-      {original_tree, E1},
-      {translation_tree, E2}} | Acc].
-
-
-%% ----------------------------------------------------------------------------
-%% Naive io format "~..." detector - should mostly work as most FTXT entries 
-%% only use ~s and occasionaly ~p  
-get_format_tags(IoFormatStr) ->
-    get_format_tags(IoFormatStr, []).
-
-get_format_tags([], Tags) -> lists:reverse(Tags);
-get_format_tags([_C], Tags) -> lists:reverse(Tags);
-
-get_format_tags([$~, C| R], Tags) -> get_format_tags(R, [C|Tags]);
-get_format_tags([_C|R], Tags) -> get_format_tags(R, Tags).
-
 
 %% ----------------------------------------------------------------------------
 %% return: bool()
@@ -714,6 +273,11 @@ is_ignore(Tab, {_Type, _OrgText, _TransText} = Key) ->
     end.
 	     
 %% update Acc with Bad only if Key not in Ignores
+%%
+%% Ignores - the ets table to check for Key
+%% Key - {CheckType, MsgId, MsgStr} a ignore file entry
+%% Bad - a validate(...) error/warning
+%% Acc - a validate(...) error/warning accumulator
 do_ignore(Ignores, Key, Bad, Acc) ->
     case is_ignore(Ignores, Key) of
 	false -> [Bad | Acc];

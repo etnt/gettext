@@ -36,8 +36,11 @@ h2e(Input) ->
 
 parse([], {T,A,_L}, [], Acc) ->
     {T, A, lists:reverse(Acc)};
-parse([], {T,A,L}, [{CTag,CAcc}|Stack], Acc) ->
-    io:format("Unterminated tag '~p' at line ~p\n", [T,L]),
+parse([], {T,A,_L}, [{CTag,CAcc}|Stack], Acc) ->
+    %% gettext_validate_bad_html.erl doesn't care about this (broken html
+    %% is expected), suppress io:format(...) as they should only see the 
+    %% validator output
+    %% io:format("Unterminated tag '~p' at line ~p\n", [T,L]),
     parse([], CTag, Stack, [{T,A,lists:reverse(Acc)}|CAcc]);
 parse([{begin_tag,T,A,L}|Tokens], CTag, Stack, Acc) ->
     case tag_type(T) of
