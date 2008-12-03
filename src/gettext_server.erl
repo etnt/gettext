@@ -276,7 +276,7 @@ unload_custom_lang(TableName, GettextDir, Lang) ->
 			   Lang, ?POFILE]),
     case filelib:is_file(Fname) of
 	true ->
-	    dets:match_delete(TableName, {{'_',Lang},'_'}),
+	    dets:match_delete(TableName, ?ENTRY('_',Lang,'_')),
             recreate_ets_table(TableName),
 	    ok;
 	false ->
@@ -284,7 +284,7 @@ unload_custom_lang(TableName, GettextDir, Lang) ->
     end.
 
 reload_custom_lang(TableName, GettextDir, Lang) ->
-    dets:match_delete(TableName, {{'_',Lang},'_'}),
+    dets:match_delete(TableName, ?ENTRY('_',Lang,'_')),
     Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
     Fname = filename:join([Dir, ?POFILE]), 
     insert_po_file(TableName, Lang, Fname),
@@ -464,12 +464,12 @@ insert(TableName, LC, L) ->
 lookup(TableName, Lang, Key) ->
     try ets:lookup(get(ets_table), ?KEY(Lang, Key)) of
 	[]          -> Key;  
-	[{_,Str}|_] -> Str
+	[?ENTRY(_,_,Str)|_] -> Str
     catch
         _:_ ->
 	    case dets:lookup(TableName, ?KEY(Lang, Key)) of
 		[]          -> Key;  
-		[{_,Str}|_] -> Str
+		[?ENTRY(_,_,Str)|_] -> Str
 	    end
     end.
     
@@ -479,5 +479,5 @@ delete_lc(TableName, LC) ->
     
 
 all_lcs_internal(TableName) ->
-    L = dets:match(TableName, {{header_info, '$1'}, '_'}),
+    L = dets:match(TableName, ?ENTRY(?GETTEXT_HEADER_INFO, '$1', '_')),
     [hd(X) || X <- L].
