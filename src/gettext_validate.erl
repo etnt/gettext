@@ -22,7 +22,8 @@
 %%-----------------------------------------------------------------------------
 -export ([
 	  validate/1,
-	  validate/2
+	  validate/2,
+	  validate/3
 	 ]).  
 
 %% ----------------------------------------------------------------------------
@@ -34,7 +35,8 @@
 %%=============================================================================
 
 %% ----------------------------------------------------------------------------
-%% @spec validate(PoFilePath::string(), IgnoreFilePath::""|string()) -> term() 
+%% @spec validate(PoFilePath::string(), IgnoreFilePath::""|string()
+%%                Opts::[{Key, Val}]) -> term() 
 %% @doc  take a valid (parsable) po file and check that there are no 
 %%       inconsistencies between the msgid and msgstr texts e.g. do ?FTXT 
 %%       format strings contain the same set of "~..." parameters ...
@@ -50,6 +52,8 @@
 %%                        time).
 %%                        Each (language) po file should usualy have one such 
 %%                        ignore file.
+%%       Opts:
+%%       {to_file, SaveLocation} - output result to file
 %%
 %%       Ignore formats:
 %%       * {no_translation, MsgId, MsgStr}
@@ -57,12 +61,19 @@
 %%       * {bad_stxt, MsgId, MsgStr}
 %%       * {bad_ws, MsgId, MsgStr}
 %%       * {bad_punctuation, MsgId, MsgStr}
-%%       * {bad_html, MsgId, MsggStr}
+%%       * {bad_html, MsgId, MsgStr}
+%%       * {bad_case, MsgId, MsgStr}
 %% @end------------------------------------------------------------------------
-validate(PoFilePath) ->
-    validate(PoFilePath, "").
 
+%% no ignores or opts
+validate(PoFilePath) ->
+    validate(PoFilePath, "", []).
+
+%% no opts 
 validate(PoFilePath, IgnoreFilePath) ->
+    validate(PoFilePath, IgnoreFilePath, []).
+
+validate(PoFilePath, IgnoreFilePath, Opts) ->
     Terms = 
 	case IgnoreFilePath of
 	    "" -> [];
@@ -90,10 +101,15 @@ validate(PoFilePath, IgnoreFilePath) ->
 	catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	end,
 	
-	{BadEntries, [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]} =
-	run_checks(Ignores, Trans),
-	format_results(PoFilePath, BadEntries, 
-		       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml])
+	{BadEntries, CheckResults} = run_checks(Ignores, Trans),
+	ResultText = format_results(PoFilePath, BadEntries, CheckResults),
+	case Opts of
+	    [{to_file, SaveLocation}] ->
+		write_to_file(ResultText, SaveLocation);
+	    _ ->
+		io:format("~s~n", [ResultText])
+	end
+	
     catch _:Reason2 -> 
 	    throw({validator_crashed, Reason2})
     after
@@ -107,20 +123,24 @@ is_valid_ignore_entry(E) ->
     case E of
 	{no_translation, MsgId, MsgStr} 
 	when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_ftxt, MsgId, MsgStr}
-	when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_stxt, MsgId, MsgStr}
-	when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_ws, MsgId, MsgStr}
-	when is_list(MsgId), is_list(MsgStr) -> true;
+
+	{bad_ftxt, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_stxt, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_ws, MsgId, MsgStr}	when is_list(MsgId), is_list(MsgStr) -> true;
+
 	{bad_punctuation, MsgId, MsgStr}
 	when is_list(MsgId), is_list(MsgStr) -> true;
-	{bad_html, MsgId, MsgStr}
-	when is_list(MsgId), is_list(MsgStr) -> true;
+
+	{bad_html, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
+	{bad_case, MsgId, MsgStr} when is_list(MsgId), is_list(MsgStr) -> true;
+
 	_ ->
 	    false
     end.
 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+write_to_file(ResultText, SaveLocation) ->
+    ok = file:write_file(SaveLocation, ResultText).
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 run_checks(Ignores, Trans) ->
@@ -152,52 +172,65 @@ run_checks(Ignores, Trans) ->
 				  look_for_bad_html(
 				    TxtPair, Ignores, Acc)
 			  end, [], Trans),
+    BadCase = lists:foldl(fun(TxtPair, Acc) -> 
+				  look_for_bad_case(
+				    TxtPair, Ignores, Acc)
+			  end, [], Trans),
 
     
     BadEntries = lists:flatten([BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, 
-				BadHtml]),
-    {BadEntries, [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]}.
+				BadHtml, BadCase]),
+    {BadEntries, 
+     [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml, BadCase]}.
 
 
-%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%% return: io_list() 
 format_results(PoFilePath, BadEntries, 
-	       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml]) ->
-    io:format("===========================================\n"
-	      " Checking: ~s\n"
-	      " Total - ~s\n"
-	      "===========================================\n", 
-	      [PoFilePath, format_count(BadEntries)]),
+	       [BadSTXT, BadFTXT, NoTrans, BadWS, BadPunct, BadHtml, 
+		BadCase]) ->
+    [
+     io_lib:format("===========================================\n"
+		   " Checking: ~s\n"
+		   " Total - ~s\n"
+		   "===========================================\n", 
+		   [PoFilePath, format_count(BadEntries)]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "Untranslated (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(NoTrans), NoTrans]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "BAD ?STXT format strings (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadSTXT), BadSTXT]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "BAD ?FTXT format strings (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadFTXT), BadFTXT]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "Incorrect whitespace usage (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadWS), BadWS]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "Inconsistent punctuation (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadPunct), BadPunct]),
+     
+     io_lib:format("-------------------------------------------\n"
+		   "Changes in html (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadHtml), BadHtml]),
 
-    io:format("-------------------------------------------\n"
-	      "Untranslated (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(NoTrans), NoTrans]),
-    
-    io:format("-------------------------------------------\n"
-	      "BAD ?STXT format strings (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(BadSTXT), BadSTXT]),
-
-    io:format("-------------------------------------------\n"
-	      "BAD ?FTXT format strings (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(BadFTXT), BadFTXT]),
-
-    io:format("-------------------------------------------\n"
-	      "Incorrect whitespace usage (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(BadWS), BadWS]),
-
-    io:format("-------------------------------------------\n"
-	      "Inconsistent punctuation (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(BadPunct), BadPunct]),
-
-    io:format("-------------------------------------------\n"
-	      "Changes in html (~s) \n"
-	      "-------------------------------------------\n"
-	      "~p\n", [format_count(BadHtml), BadHtml]),
-    ok.
+     io_lib:format("-------------------------------------------\n"
+		   "Inconsistent case at start (~s) \n"
+		   "-------------------------------------------\n"
+		   "~p\n", [format_count(BadCase), BadCase])
+    ].
 
 %% return: io_list()
 format_count(BadEntries) ->
@@ -306,7 +339,8 @@ look_for_no_translation({OriginalFormatStr, TranslatedFormatStr},
 	    do_ignore(Ignores, 
 		      {no_translation, OriginalFormatStr, TranslatedFormatStr}, 
 		      {'Warning',
-		       "Text appears to be untranslated.",
+		       "Text appears to be untranslated. Add it to .ignore "
+		       "file if valid trans. but msgid = msgstr",
 		       {text, OriginalFormatStr}}, 
 		      Acc)
     end.
@@ -444,6 +478,64 @@ is_punct(C) ->
 				 191  %% upside down ?
 				]).
 
+%% ----------------------------------------------------------------------------
+%% Try to find texts that should/shouldn't start on upper case depending on
+%% if the text is the start of a scentence or not - swedish text e.g. usualy
+%% only uses upper case at scentence start (and in names).
+
+%% Note: this check assumes latin-1 text
+%% Note: different languages have different rules for when to use upper case
+%%       (in case supporting languages) also note that translations will not
+%%       always start on the same word so they will sometime move a upper case
+%%       word into a (original text) lower case postion
+%%       
+
+look_for_bad_case({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
+    %% only do case checks with non-empty strings
+    case {OriginalFormatStr, TranslatedFormatStr} of
+	{"", ""} -> Acc;
+	{"",  _} -> Acc;
+	{_ , ""} -> Acc;
+	{_ ,  _} -> 
+	    %% check if both strings start with the same case
+	    case case_changed(has_case(hd(OriginalFormatStr)),
+			      has_case(hd(TranslatedFormatStr))) of
+		false -> Acc;
+		true -> do_ignore(Ignores,
+				   {bad_case, OriginalFormatStr, 
+				    TranslatedFormatStr},
+				   {'Warning',
+				    "Text starts with different case.",
+				    {original,    OriginalFormatStr}, 
+				    {translation, TranslatedFormatStr}},
+				   Acc)
+	    end
+    end.
+
+%% return true if case changed i.e. went from upper <-> lower, changing
+%% to/from case_less is not considerd to be a change. 
+case_changed(Case1, Case2) ->
+    case {Case1, Case2} of
+	{upper, lower} -> true;
+	{lower, upper} -> true;
+	_ -> false
+    end.
+	
+
+%% return: upper | lower | 
+%%         case_less (one variant char e.g. numbers, punctuation ...)
+%% note  : ß and y with double dots are technicaly a lower case only letters
+%%         but can in this case checker context be considred to be case less
+%%         as well
+has_case(Char) ->
+    [CU] = text:to_upper([Char]),
+    [CL] = text:to_lower([Char]),
+    case {CU == Char, CL == Char} of
+	{true,  true}  -> case_less; 
+	{true,  false} -> upper;
+	{false, true}  -> lower
+	%% {false, false}    should only happen if to_upper/to_lower is broken
+    end.
 
 %% ----------------------------------------------------------------------------
 look_for_bad_html({OriginalFormatStr, TranslatedFormatStr}, 
