@@ -29,15 +29,15 @@
 key2str(Key) -> 
     key2str(Key, get(gettext_language)).
 
-key2str(Key, "a") -> 
-    a_language(Key, []);
 key2str(Key, Lang) when is_list(Key) -> 
     key2str(?DEFAULT_SERVER, Key, Lang);
 key2str(Server, Key) when is_atom(Server) ->
     key2str(Server, Key, get(gettext_language)).
 
+key2str(_Server, Key, "a") -> 
+    a_language(Key);
 key2str(Server, Key, Lang) ->
-            gen_server:call(Server, {key2str, Key, Lang}, infinity).
+    gen_server:call(Server, {key2str, Key, Lang}, infinity).
 
 
 %%% --------------------------------------------------------------------
@@ -216,6 +216,9 @@ all_lang() -> iso639:all3lang().
 %%% special characters, so that the context will remain to a higher 
 %%% degree.
 %%% -------------------------------------------------------------------
+a_language(Key) ->
+    a_language(Key, []).
+
 a_language([], Acc) ->
     lists:reverse(Acc);
 a_language([$<|Tl] = Key, Acc) ->
