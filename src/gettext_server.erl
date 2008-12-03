@@ -30,7 +30,7 @@
 					[?MODULE, ?LINE | Y])).
 
 -define(SERVER, ?MODULE).
--define(KEY(Lang,Key), {Key,Lang}).
+-define(KEY(Lang,Key), {Key,Lang}).  % note reverse order
 -define(ENTRY(Lang, Key, Val), {?KEY(Lang,Key), Val}).
 
 
@@ -276,7 +276,7 @@ unload_custom_lang(TableName, GettextDir, Lang) ->
 			   Lang, ?POFILE]),
     case filelib:is_file(Fname) of
 	true ->
-	    dets:match_delete(TableName, ?ENTRY('_',Lang,'_')),
+	    dets:match_delete(TableName, ?ENTRY(Lang,'_','_')),
             recreate_ets_table(TableName),
 	    ok;
 	false ->
@@ -284,7 +284,7 @@ unload_custom_lang(TableName, GettextDir, Lang) ->
     end.
 
 reload_custom_lang(TableName, GettextDir, Lang) ->
-    dets:match_delete(TableName, ?ENTRY('_',Lang,'_')),
+    dets:match_delete(TableName, ?ENTRY(Lang,'_','_')),
     Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
     Fname = filename:join([Dir, ?POFILE]), 
     insert_po_file(TableName, Lang, Fname),
@@ -479,5 +479,5 @@ delete_lc(TableName, LC) ->
     
 
 all_lcs_internal(TableName) ->
-    L = dets:match(TableName, ?ENTRY(?GETTEXT_HEADER_INFO, '$1', '_')),
+    L = dets:match(TableName, ?ENTRY('$1', ?GETTEXT_HEADER_INFO, '_')),
     [hd(X) || X <- L].
