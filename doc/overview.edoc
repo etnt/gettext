@@ -113,7 +113,7 @@ In case no directory can be obtained, the priv dir of
 the directory is write protected.
 
 The directory structure will look like this:
-```$(GETTEXT_DIR)/lang/gettext_db.dets
+```$(GETTEXT_DIR)/lang/gettext_server_db.dets
    $(GETTEXT_DIR)/lang/default/$(GETTEXT_DEF_LANG)/gettext.po
    $(GETTEXT_DIR)/lang/custom/$(LANG)/gettext.po'''
 
@@ -121,7 +121,7 @@ The dets file contains the actual lookup database.
 The 'default' directory will only contain one subdirectory
 with the name of your default language (e.g "en").
 The 'custom' directory will contain one subdirectory
-for each language you have, each subdirectory containing
+for each further language you have, each subdirectory containing
 a translated gettext.po file.
 
 If you want add a translated PO-file you call the function:
