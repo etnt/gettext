@@ -1,11 +1,10 @@
-%% @private
 %% @author Håkan Stenholm <hokan@kreditor.se>
 %%
 %% @doc Use this module to validate po files returned by translators. 
-%%      This validator assumes the po file to be a valid (parsable without 
+%%      This validator assumes the po file to be valid (parsable without 
 %%      errors by gettext/poEdit/GNU po file tools).
 %%      Its use is to check for errors introduced by translators in the 
-%%      msgstr part in the po file, each msgid-msgstr is checked for the 
+%%      msgstr part in the po file. Each msgid-msgstr is checked for the 
 %%      following:
 %%
 %%      * incorrect FTXT argument usage
@@ -13,7 +12,7 @@
 %%      * incorrect whitespace at front/tail of text
 %%      * missing translations
 %%      * incorrect punctuation at the end of texts
-%%      * changes in html structure, tag names and atributes used
+%%      * changes in HTML structure, tag names and attributes used
 
 -module(gettext_validate).
 
@@ -35,43 +34,53 @@
 %%=============================================================================
 
 %% ----------------------------------------------------------------------------
-%% @spec validate(PoFilePath::string(), IgnoreFilePath::""|string()
-%%                Opts::[{Key, Val}]) -> term() 
-%% @doc  take a valid (parsable) po file and check that there are no 
-%%       inconsistencies between the msgid and msgstr texts e.g. do ?FTXT 
-%%       format strings contain the same set of "~..." parameters ...
-%%
-%%       The function prints a result listing.
-%% 
-%%       PoFilePath     - the po file check
-%%       IgnoreFilePath - a optional file that can be used to specify 
-%%                        {CheckType, MsgId, MsgStr} combinations that should
-%%                        not be reported as a errors/warnings - there are cases
-%%                        especialy for warnings that may be valid transaltions
-%%                        that just look suspect (i.e. are errors 90% of the 
-%%                        time).
-%%                        Each (language) po file should usualy have one such 
-%%                        ignore file.
-%%       Opts:
-%%       {to_file, SaveLocation} - output result to file
-%%
-%%       Ignore formats:
-%%       * {no_translation, MsgId, MsgStr}
-%%       * {bad_ftxt, MsgId, MsgStr}
-%%       * {bad_stxt, MsgId, MsgStr}
-%%       * {bad_ws, MsgId, MsgStr}
-%%       * {bad_punctuation, MsgId, MsgStr}
-%%       * {bad_html, MsgId, MsgStr}
-%%       * {bad_case, MsgId, MsgStr}
-%% @end------------------------------------------------------------------------
+%% @spec validate(PoFilePath::string()) -> ok 
+%% @equiv validate(PoFilePath, "")
 
-%% no ignores or opts
 validate(PoFilePath) ->
-    validate(PoFilePath, "", []).
+    validate(PoFilePath, "").
 
-%% no opts 
+%% @spec validate(PoFilePath::string(), IgnoreFilePath::string()) -> ok 
+%% @equiv validate(PoFilePath, IgnoreFilePath, [])
+
 validate(PoFilePath, IgnoreFilePath) ->
     validate(PoFilePath, IgnoreFilePath, []).
+
+%% @spec validate(PoFilePath::string(), IgnoreFilePath::string(),
+%%                Opts::[{Key, Val}]) -> ok 
+%% @doc  Takes a valid (parsable) po file and checks that there are no 
+%%       inconsistencies between the msgid and msgstr texts. E.g.,
+%%       checks that ?FTXT format strings contain the same set of "~..."
+%%       parameters, etc.
+%% 
+%%       The function prints a result listing.
+%% 
+%%       `PoFilePath'   - the po file check
+%% 
+%%       `IgnoreFilePath' - an optional file that can be used to specify 
+%%                        {CheckType, MsgId, MsgStr} combinations that
+%%                        should not be reported as errors/warnings -
+%%                        there are cases especially for warnings that
+%%                        may be valid translations that just look
+%%                        suspect (i.e., are errors 90% of the time).
+%%                        Each (language) po file should usualy have one
+%%                        such ignore file.
+%% 
+%%       Opts:
+%%       `{to_file, SaveLocation}' - output result to file
+%%
+%%       Ignore formats:
+%%       <ul>
+%%         <li>{no_translation, MsgId, MsgStr}</li>
+%%         <li>{bad_ftxt, MsgId, MsgStr}</li>
+%%         <li>{bad_stxt, MsgId, MsgStr}</li>
+%%         <li>{bad_ws, MsgId, MsgStr}</li>
+%%         <li>{bad_punctuation, MsgId, MsgStr}</li>
+%%         <li>{bad_html, MsgId, MsgStr}</li>
+%%         <li>{bad_case, MsgId, MsgStr}</li>
+%%       </ul>
+%% @end
+%% --------------------------------------------------------------------------
 
 validate(PoFilePath, IgnoreFilePath, Opts) ->
     Terms = 
