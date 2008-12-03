@@ -26,13 +26,29 @@
 %%% --------------------------------------------------------------------
 %%% Hopefully, the surrounding code has done its job and
 %%% put the language to be used in the process dictionary.
+
+%% @doc Get the translation string for a key using the current language.
+%% 
+%% This is usually not called directly, but via the `?TXT(Key)' macro.
+
 key2str(Key) -> 
     key2str(Key, get(gettext_language)).
+
+%% @doc Get the translation string for a key and a specific language
+%% and/or using a named gettext server. If no server is specified, the
+%% default server is used. If no language is specified, the current
+%% language is used.
+%% 
+%% This is usually not called directly, but via the `?TXT2(Key,Lang)'
+%% macro.
 
 key2str(Key, Lang) when is_list(Key) -> 
     key2str(?DEFAULT_SERVER, Key, Lang);
 key2str(Server, Key) when is_atom(Server) ->
     key2str(Server, Key, get(gettext_language)).
+
+%% @doc Get the translation string for a key and a specific language
+%% using the named gettext server.
 
 key2str(_Server, Key, "a") -> 
     a_language(Key);
