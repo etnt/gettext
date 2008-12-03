@@ -1,3 +1,5 @@
+%% @private
+
 %    Html parser file copied from Yaws, to allow gettext_validate.erl to
 %    check html in po file texts
 
