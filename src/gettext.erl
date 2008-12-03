@@ -58,17 +58,25 @@ key2str(Server, Key, Lang) ->
 
 %%% --------------------------------------------------------------------
 
+%% @doc Reloads the PO-file for a language.
+
 reload_custom_lang(Lang) ->
     reload_custom_lang(?DEFAULT_SERVER, Lang).
 
 reload_custom_lang(Server, Lang) ->
     gen_server:call(Server, {reload_custom_lang, Lang}, infinity).
 
+
+%% @doc Clears the data for a language from the server.
+
 unload_custom_lang(Lang) ->
     unload_custom_lang(?DEFAULT_SERVER, Lang).
 
 unload_custom_lang(Server, Lang) ->
     gen_server:call(Server, {unload_custom_lang, Lang}, infinity).
+
+
+%% @doc Returns the list of languages used on the server
 
 all_lcs() ->
     all_lcs(?DEFAULT_SERVER).
@@ -77,13 +85,16 @@ all_lcs(Server) ->
     gen_server:call(Server, all_lcs, infinity).
 
 
+%% @doc Recreates the database file from scratch.
+
 recreate_db() ->
     recreate_db(?DEFAULT_SERVER). 
    
 recreate_db(Server) ->
     gen_server:call(Server, recreate_db, infinity).
 
-%%--------------------------------------------------------------------
+
+%% @doc Returns the current data directory used by the server.
 
 gettext_dir() ->
     gettext_dir(?DEFAULT_SERVER).
@@ -92,12 +103,17 @@ gettext_dir(Server) ->
     gen_server:call(Server, gettext_dir, infinity).
 
 
+%% @doc Changes the data directory used by the server and re-reads all
+%% server data from the new location.
+
 change_gettext_dir(Dir) ->
     change_gettext_dir(?DEFAULT_SERVER, Dir).
 
 change_gettext_dir(Server, Dir) ->
     gen_server:call(Server, {change_gettext_dir, Dir}, infinity).
 
+
+%% @doc Returns the default language used by the server.
 
 default_lang() ->
     default_lang(?DEFAULT_SERVER).
@@ -106,15 +122,16 @@ default_lang(Server) ->
     gen_server:call(Server, default_lang, infinity).
 
 
-%%--------------------------------------------------------------------
+%% @doc Stores a binary as the new PO-file for a language.
 
-store_pofile(Lang, File) when is_binary(File) ->
-    store_pofile(?DEFAULT_SERVER, Lang, File).
+store_pofile(Lang, Binary) when is_binary(Binary) ->
+    store_pofile(?DEFAULT_SERVER, Lang, Binary).
 
-store_pofile(Server, Lang, File) when is_binary(File) ->
-    gen_server:call(Server, {store_pofile, Lang, File}, infinity).
+store_pofile(Server, Lang, Binary) when is_binary(Binary) ->
+    gen_server:call(Server, {store_pofile, Lang, Binary}, infinity).
 
-%%--------------------------------------------------------------------
+
+%% @doc Returns the character set used for a language.
 
 lang2cset(Lang) ->
     lang2cset(?DEFAULT_SERVER, Lang).
@@ -127,6 +144,7 @@ lang2cset(Server, Lang) ->
 %%% we need to take care of quotes.
 %%% --------------------------------------------------------------------
 
+%% @private
 quotes([$'|T]) -> [$\\,$' | quotes(T)];
 quotes([$"|T]) -> [$\\,$" | quotes(T)];
 quotes([H|T])  -> [H      | quotes(T)];
@@ -136,9 +154,13 @@ quotes([])     -> [].
 %%% Parse a PO-file
 %%% --------------------------------------------------------------------
 
+%% @doc Read and parse a PO-file.
+
 parse_po(Fname) ->
     {ok,Bin} = file:read_file(Fname),
     parse_po_bin(Bin).
+
+%% @doc Parse a PO-file given as a binary.
 
 parse_po_bin(Bin) ->
     parse_po_file(to_list(Bin)).
