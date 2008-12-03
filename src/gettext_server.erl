@@ -190,10 +190,7 @@ handle_call(all_lcs, _From, State) ->
 handle_call({reload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
     TableName  = State#state.table_name,
-    case reload_custom_lang(TableName, GettextDir, Lang) of
-	ok   -> {reply, ok, State};
-	Else -> {reply, Else, State}
-    end;
+    {reply, reload_custom_lang(TableName, GettextDir, Lang), State};
 %%
 handle_call({unload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
@@ -201,15 +198,15 @@ handle_call({unload_custom_lang, Lang}, _From, State) ->
     {reply, unload_custom_lang(TableName, GettextDir, Lang), State};
 %%
 handle_call(recreate_db, _From, State) ->
-    recreate_db(State#state.table_name, State#state.gettext_dir),
-    {reply, ok, State};
+    Cache = recreate_db(State#state.table_name, State#state.gettext_dir),
+    {reply, ok, State#state{cache = Cache}};
 %%
 handle_call(gettext_dir, _From, State) ->
     {reply, State#state.gettext_dir, State};
 %%
 handle_call({change_gettext_dir, Dir}, _From, State) ->
-    recreate_db(State#state.table_name, Dir),
-    {reply, ok, State#state{gettext_dir = Dir}};
+    Cache = recreate_db(State#state.table_name, Dir),
+    {reply, ok, State#state{gettext_dir = Dir, cache = Cache}};
 %%
 handle_call(default_lang, _From, State) ->
     {reply, State#state.def_lang, State}.
