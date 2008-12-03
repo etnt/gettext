@@ -175,7 +175,7 @@ handle_call({lang2cset, Lang}, _From, State) ->
 handle_call({store_pofile, Lang, File}, _From, State) ->
     GettextDir = State#state.gettext_dir,
     TableName  = State#state.table_name,
-    case do_store_pofile(TableName, Lang, File, GettextDir, State#state.cache) of
+    case store_pofile(TableName, Lang, File, GettextDir, State#state.cache) of
 	{ok, NewCache} ->
 	    {reply, ok, State#state{cache = NewCache}};
 	Else ->
@@ -190,7 +190,7 @@ handle_call(all_lcs, _From, State) ->
 handle_call({reload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
     TableName  = State#state.table_name,
-    case do_reload_custom_lang(TableName, GettextDir, Lang) of
+    case reload_custom_lang(TableName, GettextDir, Lang) of
 	ok   -> {reply, ok, State};
 	Else -> {reply, Else, State}
     end;
@@ -198,7 +198,7 @@ handle_call({reload_custom_lang, Lang}, _From, State) ->
 handle_call({unload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
     TableName  = State#state.table_name,
-    {reply, do_unload_custom_lang(TableName, GettextDir, Lang), State};
+    {reply, unload_custom_lang(TableName, GettextDir, Lang), State};
 %%
 handle_call(recreate_db, _From, State) ->
     recreate_db(State#state.table_name, State#state.gettext_dir),
@@ -271,7 +271,7 @@ recreate_db(TableName, GettextDir) ->
     file:delete(Fname),
     create_db(TableName, GettextDir, Fname).
 
-do_unload_custom_lang(TableName, GettextDir, Lang) ->
+unload_custom_lang(TableName, GettextDir, Lang) ->
     Fname = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR,
 			   Lang, ?POFILE]),
     case filelib:is_file(Fname) of
@@ -283,7 +283,7 @@ do_unload_custom_lang(TableName, GettextDir, Lang) ->
 	    {error, "no lang"}
     end.
 
-do_reload_custom_lang(TableName, GettextDir, Lang) ->
+reload_custom_lang(TableName, GettextDir, Lang) ->
     dets:match_delete(TableName, {{'_',Lang},'_'}),
     Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
     Fname = filename:join([Dir, ?POFILE]), 
@@ -291,7 +291,7 @@ do_reload_custom_lang(TableName, GettextDir, Lang) ->
     recreate_ets_table(TableName),
     ok.
 
-do_store_pofile(TableName, Lang, File, GettextDir, Cache) ->
+store_pofile(TableName, Lang, File, GettextDir, Cache) ->
     Dir = filename:join([GettextDir, ?LANG_DIR, ?CUSTOM_DIR, Lang]),
     Fname = filename:join([Dir, ?POFILE]), 
     filelib:ensure_dir(Fname), 
@@ -414,7 +414,7 @@ open_dets_file(Tname, Fname) ->
 %%%
 %%% Insert the given languages into the DB.
 %%%
-%%% NB: It is important to insert the 'predefiend' language
+%%% NB: It is important to insert the 'predefined' language
 %%%     definitions first since a custom language should be
 %%%     able to 'shadow' the the same predefined language.
 %%%
@@ -429,6 +429,7 @@ insert_predefined(TableName, GettextDir, L) ->
 insert_data(TableName, Dir, L) ->
     case file:list_dir(Dir) of
 	{ok, Dirs} ->
+	    %% TODO: this should accept only *.po-files, not just filter some
 	    F = fun([$.|_], Acc)     -> Acc;  % ignore in a local inst. env.
 		   ("CVS" ++ _, Acc) -> Acc;  % ignore in a local inst. env.
 		   (LC, Acc)         ->
