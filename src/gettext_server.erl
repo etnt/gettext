@@ -183,9 +183,7 @@ handle_call({store_pofile, Lang, File}, _From, State) ->
     end;
 %%
 handle_call(all_lcs, _From, State) ->
-    TableName = State#state.table_name,
-    Reply = all_lcs_internal(TableName),
-    {reply, Reply, State};
+    {reply, [X#cache.language || X <- State#state.cache], State};
 %%
 handle_call({reload_custom_lang, Lang}, _From, State) ->
     GettextDir = State#state.gettext_dir,
@@ -362,7 +360,7 @@ create_cache(TableName) ->
 		end
 	end,
     recreate_ets_table(TableName),
-    lists:foldl(F, [], all_lcs_internal(TableName)).
+    lists:foldl(F, [], all_lcs_dets(TableName)).
 
 create_and_populate(TableName, GettextDir, TableFile) ->
     ?elog("TableFile = ~p~n", [TableFile]),
@@ -475,6 +473,6 @@ delete_lc(TableName, LC) ->
     dets:match_delete(TableName, ?ENTRY(LC, '_', '_')).
     
 
-all_lcs_internal(TableName) ->
+all_lcs_dets(TableName) ->
     L = dets:match(TableName, ?ENTRY('$1', ?GETTEXT_HEADER_INFO, '_')),
     [hd(X) || X <- L].
