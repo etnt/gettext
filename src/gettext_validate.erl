@@ -32,7 +32,7 @@
 %% `check({OriginalFormatStr::string(), TranslatedFormatStr::string()}, 
 %%         Ignores, Acc::[acc()]) -> UpdatedAcc::[acc()]'
 %%
-%%  Returns a updated accumualtor UpdatedAcc after checking
+%%  Returns a updated accumulator UpdatedAcc after checking
 %%  OriginalFormatStr against TranslatedFormatStr, one or more entries must be
 %%  added to the head of Acc if problems are found.
 %%  Ignores contains a ets table reference used by 
