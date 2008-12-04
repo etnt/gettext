@@ -43,8 +43,8 @@
 %%
 %%  Each acc() must be of the format:
 %%```{alert_level(), 
-%%   ErrorMsg::string(), 
-%%   Pairs::{Name::atom(), Info::term()} ....} 
+%%    ErrorMsg::string(), 
+%%    Pairs::{Name::atom(), Info::term()} ....} 
 %%
 %%   alert_level() = 'ERROR'   (error that may crash e.g. STXT/FTXT or generate
 %%                              invalid output)
@@ -52,6 +52,13 @@
 %%   Pairs - contain check specific error information, usualy at least the
 %%   msgid and msgstr so that they can be found in a po file and fixed.
 %%'''
+%%
+%% @type output() = [{{heading,          string()},
+%%                    {ignore_type,      atom()}, 
+%%		      {po_file_path,     string()},
+%%		      {ignore_file_path, string()},
+%% 		      CheckRes::[acc()]
+%%                  }]
 
 -module(gettext_validate).
 
@@ -107,7 +114,7 @@ validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
 
 %% ----------------------------------------------------------------------------
 %% @spec validate(PoFilePath::string(), IgnoreFilePath::[]|string(),
-%%                Opts::[{Key, Val}]) -> ok 
+%%                Opts::[{Key, Val}]) -> ok | output()
 %% @doc  Takes a valid (parsable) po file and checks that there are no 
 %%       inconsistencies between the msgid and msgstr texts. E.g.,
 %%       checks that ?FTXT format strings contain the same set of "~..."
@@ -125,8 +132,13 @@ validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
 %%                          ignore file.
 %%
 %%       `Opts:'
-%%``` {to_file, SaveLocation} - output result to file
+%%``` {to_file, SaveLocation} - force output to file rather than shell
 %%    {checkers, ModuleNames} - checkers to use, ModuleNames = [atom()]
+%%    {end_user, Format}      - output format:
+%%             human    - print readable text (default) to shell, file, ...
+%%             computer - fuction returns output() to describe
+%%                        the check results - this is useful for automated
+%%                        po file validation
 %%'''
 %% @end------------------------------------------------------------------------
 validate(PoFilePath, IgnoreFilePath, Opts) ->
@@ -142,38 +154,57 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
     Ignores = ets:new(dummy, [set,private,{keypos,1}]),
 
     %% catch exceptions so that ets table is always cleaned up
-    try
-	%% fill ets table with ignore data for fast lookup
-		lists:foreach(fun(E) -> 
-			      case is_valid_ignore_entry(E) of
-				  true  -> ets:insert(Ignores, {E});
-				  false -> throw({invalid_ignore_file_entry, E})
-			      end
-		      end, Terms),
+    Res = 
+	try
+	    %% fill ets table with ignore data for fast lookup
+	    lists:foreach(
+	      fun(E) -> 
+		      case is_valid_ignore_entry(E) of
+			  true  -> ets:insert(Ignores, {E});
+			  false -> throw({invalid_ignore_file_entry, E})
+		      end
+	      end, Terms),
+	    
+	    %% get file and discard non-text meta data header
+	    [{header_info, _} | Trans] = 
+	    try gettext:parse_po(PoFilePath)
+	    catch _:_ -> throw(po_file_not_found_or_parsing_failed)
+	    end,
+	    
+	    Callbacks = look_up(checkers, Opts),
+	    CheckResults = run_checks(Ignores, Trans, Callbacks),
+	    EndUser = case look_up(end_user, Opts) of
+			  [] -> human;
+			  EndUser0 -> EndUser0
+		      end,
+	    case EndUser of
+		human ->
+		    ResultText = format_results(PoFilePath, CheckResults, 
+						Callbacks),
+		    case look_up(to_file, Opts) of
+			[] ->
+			    io:format("~s~n", [ResultText]);
+			SaveLocation ->
+			    write_to_file(ResultText, SaveLocation)
+		    end,
+		    ok;
+		computer ->
+		    [{{heading, Checker:heading()},
+		      {ignore_type, Checker:ignore_entry_type()}, 
+		      {po_file_path, PoFilePath},
+		      {ignore_file_path, IgnoreFilePath},
+		      CheckRes} 
+		     || {CheckRes, Checker} 
+			    <- lists:zip(CheckResults, Callbacks)]
+	    end
 	
-	%% get file and discard non-text meta data header
-	[{header_info, _} | Trans] = 
-	try gettext:parse_po(PoFilePath)
-	catch _:_ -> throw(po_file_not_found_or_parsing_failed)
+	catch _:Reason2 -> 
+		throw({validator_crashed, Reason2})
+	after
+	    %% all checks done - discard ignore table
+	    ets:delete(Ignores)
 	end,
-	
-	Callbacks = look_up(checkers, Opts),
-	CheckResults = run_checks(Ignores, Trans, Callbacks),
-	ResultText = format_results(PoFilePath, CheckResults, Callbacks),
-	case look_up(to_file, Opts) of
-	    [] ->
-		io:format("~s~n", [ResultText]);
-	    SaveLocation ->
-		write_to_file(ResultText, SaveLocation)
-	end
-	
-    catch _:Reason2 -> 
-	    throw({validator_crashed, Reason2})
-    after
-	%% all checks done - discard ignore table
-	ets:delete(Ignores)
-    end,
-    ok.
+    Res.
 
 %% Check that ignore file looks usable - we don't check the ignore type to 
 %% allow for ignore files used with other sets of checker callback modules 
