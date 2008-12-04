@@ -171,6 +171,9 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 	    catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	    end,
 	    
+	    %% assert that there are no msgid duplicates
+	    throw_on_duplicates(Trans),
+
 	    Callbacks = look_up(checkers, Opts),
 	    CheckResults = run_checks(Ignores, Trans, Callbacks),
 	    EndUser = case look_up(end_user, Opts) of
@@ -206,6 +209,33 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 	end,
     Res.
 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ 
+throw_on_duplicates(MsgidMsgStrL) ->
+    F = fun({MsgId1, _}, {MsgId2, _}) -> MsgId1 < MsgId2 end,
+    SortedPairs = lists:sort(F, MsgidMsgStrL),
+    case scan_for_duplicate(SortedPairs) of
+	[] -> MsgidMsgStrL;
+	Dups -> throw({po_file_contained_duplicates, Dups})
+    end.
+	     
+
+scan_for_duplicate(SortedPairs) ->
+    DupL = scan_for_duplicate(SortedPairs, []),
+    lists:usort(DupL). %% only keep one copy of each duplicate
+
+%% store all but last duplicate in Acc
+scan_for_duplicate([], Acc) ->
+    Acc;
+scan_for_duplicate([_], Acc) ->
+    Acc;
+scan_for_duplicate([{Id,_} = E1, {Id,_} = E2 | R], Acc) ->
+    scan_for_duplicate([E2 | R], [Id | Acc]);
+scan_for_duplicate([E1, E2 | R], Acc) ->
+    scan_for_duplicate([E2 | R], Acc).
+
+
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 %% Check that ignore file looks usable - we don't check the ignore type to 
 %% allow for ignore files used with other sets of checker callback modules 
 %% is_list/1 = is_string/1 check
