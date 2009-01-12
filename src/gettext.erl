@@ -228,13 +228,13 @@ to_list(L) when is_list(L)    -> L.
 %%% --------------------------------------------------------------------
 
 lc2lang(LC) -> 
-    case iso639:lc3lang(LC) of
-	""   -> iso639:lc2lang(LC);  % backward compatible
+    case gettext_iso639:lc3lang(LC) of
+	""   -> gettext_iso639:lc2lang(LC);  % backward compatible
 	Lang -> Lang
     end.
     
 
-all_lang() -> iso639:all3lang().
+all_lang() -> gettext_iso639:all3lang().
 
 
 %%% -------------------------------------------------------------------
@@ -259,14 +259,14 @@ a_language(Key) ->
 
 a_language([], Acc) ->
     lists:reverse(Acc);
-a_language([$<|Tl] = Key, Acc) ->
+a_language([$<|_Tl] = Key, Acc) ->
     {RestKey, Html} = search_for(Key, [], $<),
     a_language(RestKey, Html++Acc);
 a_language([$\s = Hd |Tl], Acc) ->
     a_language(Tl, [Hd|Acc]);
 a_language([$~ = Hd |Tl], Acc) ->
     [Hd2|Tl2] = Tl, 
-    a_language(Tl2, [Hd2, $~ |Acc]);
+    a_language(Tl2, [Hd2, Hd |Acc]);
 a_language([$$|Tl], Acc) ->
     {RestKey, DollarFormat} = search_for(Tl, [], $$),
     a_language(RestKey, DollarFormat++[$$|Acc]);

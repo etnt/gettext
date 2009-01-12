@@ -77,7 +77,7 @@ display_errors() ->
  
 dialog() ->
     LC = gettext:default_lang(),
-    io:format("Language set to: ~s~n", [iso639:lc2lang(LC)]),
+    io:format("Language set to: ~s~n", [gettext_iso639:lc2lang(LC)]),
     dialog(LC).
 
 dialog(QueryLang) ->
@@ -135,12 +135,12 @@ dialog(QueryLang) ->
     end.
 
 %%this function checks if the language we choose exists in the system, 
-%%uses iso639 module
+%%uses gettext_iso639 module
 check_lang("a") ->
     ok;
 
 check_lang(Lang) ->
-    case iso639:lc2lang(Lang) of 
+    case gettext_iso639:lc2lang(Lang) of 
 	"" ->
 	    error;
 	_Other ->

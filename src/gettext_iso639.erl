@@ -4,7 +4,7 @@
 %%% @doc ISO 639 2- and 3-letter codes.
 %%% @private
 
--module(iso639).
+-module(gettext_iso639).
 -export([lc2lang/1, all2lang/0, lc3lang/1, all3lang/0]).
 
 %%%---------------------------------------------------------------------
