@@ -20,7 +20,7 @@ MODULES=gettext \
 	gettext_checker \
 	gettext_sup \
 	gettext_app \
-	iso639 
+	gettext_iso639 
 
 EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
 ERL_FILES=$(MODULES:%=%.erl)
