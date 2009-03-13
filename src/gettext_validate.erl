@@ -225,14 +225,12 @@ scan_for_duplicate(SortedPairs) ->
     lists:usort(DupL). %% only keep one copy of each duplicate
 
 %% store all but last duplicate in Acc
+scan_for_duplicate([{Id,_}=E, {Id,_} | R], Acc) ->
+    scan_for_duplicate([E | R], [Id | Acc]);
+scan_for_duplicate([_ | R], Acc) ->
+    scan_for_duplicate(R, Acc);
 scan_for_duplicate([], Acc) ->
-    Acc;
-scan_for_duplicate([_], Acc) ->
-    Acc;
-scan_for_duplicate([{Id,_} = E1, {Id,_} = E2 | R], Acc) ->
-    scan_for_duplicate([E2 | R], [Id | Acc]);
-scan_for_duplicate([E1, E2 | R], Acc) ->
-    scan_for_duplicate([E2 | R], Acc).
+    Acc.
 
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
