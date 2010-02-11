@@ -81,7 +81,12 @@ stxt3([], _, _) ->
 %% get the substitute value
 get_arg(Key, Args) ->
     {value, {_, Val}} = lists:keysearch(Key, 1, Args),
-    Val.
+    case is_list(Val) of
+	true ->
+	    Val;
+	false ->
+	    io_lib:format("~p", [Val])
+    end.
 
 
 %% ----------------------------------------------------------------------------
