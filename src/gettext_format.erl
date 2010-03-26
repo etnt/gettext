@@ -48,17 +48,24 @@
 %%      who will usually only have acess to FormatStr shown as the MsgId in the
 %%      po file.
 %% @end------------------------------------------------------------------------
-stxt([$$|R], Args) ->
+stxt(Str, Args) ->
+    try stxt0(Str, Args)
+    catch throw:Reason -> throw({reason, Reason, 
+				 input_str, Str, 
+				 input_args, Args})
+    end.
+
+stxt0([$$|R], Args) ->
     stxt2(R, Args);
-stxt([C|R], Args) ->
-    [C | stxt(R, Args)];
+stxt0([C|R], Args) ->
+    [C | stxt0(R, Args)];
 %% finished
-stxt([], _) ->
+stxt0([], _) ->
     [].
 
 
 stxt2([$$|R], Args) ->
-    [$$ | stxt(R, Args)];
+    [$$ | stxt0(R, Args)];
 stxt2([C|R], Args) ->
     stxt3(R, Args, [C]);
 %% unexpected end of FormatStr
@@ -70,7 +77,7 @@ stxt3([$$|R], Args, Acc) ->
     TagStr = lists:reverse(Acc),
     Tag = list_to_atom(TagStr),
     SubsStr = get_arg(Tag, Args),
-    SubsStr ++ stxt(R, Args);
+    SubsStr ++ stxt0(R, Args);
 stxt3([C|R], Args, Acc) ->
     stxt3(R, Args, [C|Acc]);
 %% unexpected end of FormatStr
@@ -96,7 +103,10 @@ get_arg(Key, Args) ->
 %% Note: this code must implement the same state machine as stxt(...) to work
 %%       properly
 get_vars_in_format_str(FormatStr) ->
-    get_vars(FormatStr, []).
+    try get_vars(FormatStr, [])
+    catch throw:Reason -> throw({reason, Reason, 
+				 input_str, FormatStr})
+    end.
 
 get_vars([$$|R], Vars) ->
     get_vars2(R, Vars);
