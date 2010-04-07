@@ -164,16 +164,16 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 			  false -> throw({invalid_ignore_file_entry, E})
 		      end
 	      end, Terms),
-	    
+
 	    %% get file and discard non-text meta data header
 	    [{header_info, _} | Trans] = 
 	    try gettext:parse_po(PoFilePath)
 	    catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	    end,
-	    
+
 	    %% assert that there are no msgid duplicates
 	    throw_on_duplicates(Trans),
-
+	    
 	    Callbacks = look_up(checkers, Opts),
 	    CheckResults = run_checks(Ignores, Trans, Callbacks),
 	    EndUser = case look_up(end_user, Opts) of
@@ -259,14 +259,14 @@ look_up(Key, Opts) ->
     end.
 
 default_opts() ->
-    [{checkers, [gettext_validate_no_trans,
+    [{checkers, [gettext_validate_bad_stxt,
+		 gettext_validate_no_trans,
 		 gettext_validate_bad_case,
 		 gettext_validate_bad_punct,
 		 gettext_validate_bad_ftxt,  
-		 gettext_validate_bad_stxt,
 		 gettext_validate_bad_html,
 		 gettext_validate_bad_ws]}
-     ].
+    ].
 
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

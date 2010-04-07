@@ -27,9 +27,20 @@ check({OriginalFormatStr, TranslatedFormatStr},
     %%     in crashes !!! 
 
     %% check strings only
-    Vars1 = gettext_format:get_vars_in_format_str(OriginalFormatStr),
-    Vars2 = gettext_format:get_vars_in_format_str(TranslatedFormatStr),
-    
+    ThrowMsg = {formatter_crashed,
+		OriginalFormatStr, TranslatedFormatStr},
+    Vars1 = 
+	try 
+	    gettext_format:get_vars_in_format_str(OriginalFormatStr)
+	catch _:_ ->
+		throw(ThrowMsg)
+	end,
+    Vars2 = 
+	try 
+	    gettext_format:get_vars_in_format_str(TranslatedFormatStr)
+	catch _:_ ->
+		throw(ThrowMsg)
+	end,
     InterSect = lists_ext:intersection(Vars1, Vars2),
     %% some $...$ are unused
     OkButSuspect = lists_ext:subtract(Vars1, Vars2),
