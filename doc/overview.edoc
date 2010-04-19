@@ -106,7 +106,7 @@ giving it as an argument in your supervisor code that setup
 the gettext_server (see example in gettext_sup.erl).
 
 Example:
-```M:gettext_dir/0 ==> "/tmp/gettext_DB"'''
+```M:gettext_dir/0 ==> "/tmp/gettext_server_db"'''
 
 In case no directory can be obtained, the priv dir of
 'gettext' will be used, which may cause trouble if
@@ -134,10 +134,8 @@ See the example section below.
 
 This step requires you to setup some Makefile support.
 
-The jungerl version of 'gettext' has a simple example
-prepared for you to look at. The top 'gettext' Makefile
-contains a target 'jungerl_example' which will run make
-using the 'Makefile.gettext' makefile.
+The top 'gettext' Makefile contains a target 'example'
+which will run make using the 'Makefile.gettext' makefile.
 
 Take a look at the Makefile.gettext. At the top you
 specify the directories that should be processed, i.e
@@ -171,9 +169,9 @@ the temporary DB and generate the 'initial' PO-file.
 To create our database directory and generate the initial
 PO-file we run:
 
-```# cd jungerl/lib/gettext'''
+```# cd gettext'''
 
-```# make jungerl_example'''
+```# make example'''
 (compile printouts removed here)
 
 ```# cat /tmp/gettext_example/lang/default/en/gettext.po'''

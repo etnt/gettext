@@ -19,7 +19,7 @@
 -include("gettext_internal.hrl").
 
 
--define(TABLE_NAME, gettext_db).
+-define(TABLE_NAME, gettext_server_db).
 -define(ROOT_DIR, filename:join([gettext_server:gettext_dir(), ?LANG_DIR])).
 -define(ENDCOL, 72).
 -define(PIVOT, 4).
@@ -30,7 +30,7 @@
 help() ->
     io:format(
       "Module for finding and reparing dependency errors and warnings in~n"
-      "the gettext_db.~n"
+      "the gettext_server_db.~n"
       "It recognizes the following situations:~n"
       "  * no key found in one of the languages~n"
       "  * key has the same value in both languages~n"
@@ -47,7 +47,8 @@ help() ->
       "       - same_value~n"
       "       - spaces_warning~n"
       "       - the_end~n"
-      "      NextKey is a key from gettext_db in which the error occurred~n"
+      "      NextKey is a key from gettext_server_db in which the error "
+      "occurred~n"
       "      (without the language information).~n"
       "      Args are additional arguments. Usually the empty list - "
       "only if~n"
@@ -242,9 +243,9 @@ get_first_key() ->
     Key = dets:first(?TABLE_NAME),
     Key.
 
-%% functionality for getting the new error/warning information from gettext_db
-%% it return a List - [NextKey,Key,Args,Status] - run gettext_checker:help()
-%% for more informations 
+%% functionality for getting the new error/warning information from
+%% gettext_server_db it returns a List - [NextKey,Key,Args,Status] - run
+%% gettext_checker:help() for more informations
 next_non_translated('$end_of_table',_QueryLang) ->
     ['$end_of_table',[],[],the_end];
 %%

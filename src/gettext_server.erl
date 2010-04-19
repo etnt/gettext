@@ -56,7 +56,10 @@
 
 %% Callback functions for default initialization.
 gettext_dir() ->
-    code:priv_dir(gettext).
+    case code:priv_dir(gettext) of
+        {error, bad_name} -> "./priv";
+        Dir -> Dir
+    end.
 
 gettext_def_lang() ->
     ?DEFAULT_LANG.

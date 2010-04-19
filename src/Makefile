@@ -38,9 +38,6 @@ all: $(EBIN_FILES)
 debug:
 	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) +debug_info -Ddebug"
 
-imsg:
-	$(MAKE) ERLC_FLAGS+="-Dimsg"
-
 docs: ../doc/index.html
 
 ../doc/index.html: ../doc/overview.edoc $(ERL_FILES)  $(INCLUDES)
@@ -50,4 +47,4 @@ clean:
 	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
 	  ../doc/stylesheet.css ../doc/erlang.png
 
-../ebin/*.beam: $(INCLUDES)
+../ebin/%.beam: $(INCLUDES)

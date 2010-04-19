@@ -8,11 +8,8 @@ clean:
 docs:
 	(cd src;$(MAKE) docs)
 
-release: clean appfile
-	sh ../../support/create_release.sh
-
 appfile:
 	(cd src;$(MAKE) ../ebin/gettext.app)
 
-jungerl_example:
+example:
 	$(MAKE) -f Makefile.gettext

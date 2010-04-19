@@ -1,7 +1,9 @@
+## (Most of this does not work out of the box; a new example would be good...)
+
 ##
 ## Add the directories here that should be gettext'ified
 ##
-TXT_DIRS = ../esmb  # ../eldap
+TXT_DIRS = ../esmb
 
 ##
 ## Set this to a directory where we have write access.
