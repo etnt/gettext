@@ -1,12 +1,31 @@
-%%%-------------------------------------------------------------------
-%%% File    : gettext_server.erl
-%%% Created : 28 Oct 2003 by Torbjorn Tornkvist <tobbe@bluetail.com>
-%%% @author Torbjorn Tornkvist <tobbe@bluetail.com>
-%%% @doc Server for Erlang gettext.
+%% -------------------------------------------------------------------------
+%% Permission is hereby granted, free of charge, to any person obtaining a
+%% copy of this software and associated documentation files (the
+%% "Software"), to deal in the Software without restriction, including
+%% without limitation the rights to use, copy, modify, merge, publish,
+%% distribute, sublicense, and/or sell copies of the Software, and to permit
+%% persons to whom the Software is furnished to do so, subject to the
+%% following conditions:
+%% 
+%% The above copyright notice and this permission notice shall be included
+%% in all copies or substantial portions of the Software.
+%% 
+%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+%% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+%% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+%% NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+%% DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+%% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+%% USE OR OTHER DEALINGS IN THE SOFTWARE.
+%%
+%% Created: 28 Oct 2003 by Torbjorn Tornkvist <tobbe@bluetail.com>
+%% @author Torbjorn Tornkvist <tobbe@bluetail.com>
+%% @doc Server for Erlang gettext.
 
 -module(gettext_server).
 
 -behaviour(gen_server).
+
 %%--------------------------------------------------------------------
 %% Include files
 %%--------------------------------------------------------------------
@@ -130,10 +149,10 @@ get_callback_mod(CallBackMod0) ->
 %%%
 get_gettext_dir(CallBackMod) ->
     case os:getenv(?ENV_ROOT_DIR) of
-	false -> 
-	    case catch CallBackMod:gettext_dir() of
-		Dir when is_list(Dir) -> Dir;
-		_ -> gettext_dir() % fallback
+	false ->
+	    try CallBackMod:gettext_dir()
+	    catch
+		_:_ -> gettext_dir() % fallback
 	    end;
 	Dir -> Dir
     end.

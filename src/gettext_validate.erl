@@ -1,58 +1,73 @@
+%% -------------------------------------------------------------------------
+%% Permission is hereby granted, free of charge, to any person obtaining a
+%% copy of this software and associated documentation files (the
+%% "Software"), to deal in the Software without restriction, including
+%% without limitation the rights to use, copy, modify, merge, publish,
+%% distribute, sublicense, and/or sell copies of the Software, and to permit
+%% persons to whom the Software is furnished to do so, subject to the
+%% following conditions:
+%% 
+%% The above copyright notice and this permission notice shall be included
+%% in all copies or substantial portions of the Software.
+%% 
+%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+%% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+%% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+%% NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+%% DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+%% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+%% USE OR OTHER DEALINGS IN THE SOFTWARE.
+%%
 %% @author Håkan Stenholm <hokan@kreditor.se>
+%% @doc Use this module to validate po files returned by translators. This
+%% validator assumes the po file to be valid (parsable without errors by
+%% gettext/poEdit/GNU po file tools). Its use is to check for errors
+%% introduced by translators in the msgstr part in the po file; this is done
+%% by supplying checker callback module names to the validate(...) function.
 %%
-%% @doc Use this module to validate po files returned by translators. 
-%%      This validator assumes the po file to be valid (parsable without 
-%%      errors by gettext/poEdit/GNU po file tools).
-%%      Its use is to check for errors introduced by translators in the 
-%%      msgstr part in the po file, this is done by supplying checker callback
-%%      module names, to the validate(...) function.
+%% A number of default checkers that should work on most texts can check
+%% for:
+%% <ul>
+%% <li>incorrect FTXT argument usage</li>
+%% <li>incorrect STXT argument usage</li>
+%% <li>incorrect whitespace at front/tail of text</li>
+%% <li>missing translations</li>
+%% <li>incorrect punctuation at the end of texts</li>
+%% <li>changes in HTML structure, tag names and attributes used</li>
+%% <li>inconsistent usage of case at begining of text</li>
+%% </ul>
 %%
-%%      A number of default checkers that should work on most texts, can check
-%%      for:
+%% A checker must implement
+%% ```ignore_entry_type() -> atom().'''
+%% Returns the typename to use in the ignore file.
 %%
-%%   ```* incorrect FTXT argument usage
-%%      * incorrect STXT argument usage
-%%      * incorrect whitespace at front/tail of text
-%%      * missing translations
-%%      * incorrect punctuation at the end of texts
-%%      * changes in HTML structure, tag names and attributes used
-%%      * inconsistent usage of case at begining of text
-%%''' 
-%% ==A checker must implement: ==
+%% ```heading() -> string().'''
+%% Returns a short text used as heading when listing errors/warnings for
+%% this checker.
 %%
-%% `ignore_entry_type() -> atom().'
+%% ```check({OriginalFormatStr::string(), TranslatedFormatStr::string()}, 
+%%          Ignores, Acc::[acc()]) -> UpdatedAcc::[acc()]'''
+%% Returns an updated accumulator `UpdatedAcc' after checking
+%% `OriginalFormatStr' against `TranslatedFormatStr'. One or more entries
+%% must be added to the head of `Acc' if problems are found. `Ignores'
+%% contains an ETS table reference used by `gettext_validate:do_ignore(...)'
+%% to check if the error/warning should be reported - this filtering should
+%% be done after the check, so that the code crashes if the checker is
+%% broken - ignore files could otherwise hide broken checks.
 %%
-%%  Return the typename to use in the ignore file.
-%%
-%% `heading() -> string().'
-%%
-%%  Return a short text used as heading, when listing errors/warnings for this
-%%  checker.
-%%
-%% `check({OriginalFormatStr::string(), TranslatedFormatStr::string()}, 
-%%         Ignores, Acc::[acc()]) -> UpdatedAcc::[acc()]'
-%%
-%%  Returns a updated accumulator UpdatedAcc after checking
-%%  OriginalFormatStr against TranslatedFormatStr, one or more entries must be
-%%  added to the head of Acc if problems are found.
-%%  Ignores contains a ets table reference used by 
-%%  gettext_validate:do_ignore(...) to check if the error/warning should be
-%%  reported - this filtering should be done after the check, so that the code
-%%  crashes if the checker is broken, ignore files could otherwise hide broken
-%%  checks.
-%%
-%%  Each acc() must be of the format:
+%% Each acc() must be of the format:
 %%```{alert_level(), 
 %%    ErrorMsg::string(), 
-%%    Pairs::{Name::atom(), Info::term()} ....} 
-%%
-%%   alert_level() = 'ERROR'   (error that may crash e.g. STXT/FTXT or generate
-%%                              invalid output)
-%%                 | 'Warning' (probably a error)
-%%   Pairs - contain check specific error information, usualy at least the
-%%   msgid and msgstr so that they can be found in a po file and fixed.
-%%'''
-%%
+%%    Pairs::{Name::atom(), Info::term()} ....}'''
+%% where `alert_level()' is either `` 'ERROR' '', indicating an error that
+%% may cause a crash (e.g., in STXT/FTXT) or generate invalid output, or ``
+%% 'Warning' '', indicating a possible problem. `Pairs' contain check
+%% specific error information - usually at least the msgid and msgstr, so
+%% that they can be found in a po file and fixed.
+
+-module(gettext_validate).
+
+
 %% @type output() = [{{heading,          string()},
 %%                    {ignore_type,      atom()}, 
 %%		      {po_file_path,     string()},
@@ -60,7 +75,6 @@
 %% 		      CheckRes::[acc()]
 %%                  }]
 
--module(gettext_validate).
 
 %%-----------------------------------------------------------------------------
 %% External exports
