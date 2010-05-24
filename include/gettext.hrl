@@ -30,17 +30,4 @@
 -define(FTXT2(S, A, Lang), lists:flatten(io_lib:format(?TXT2(S, Lang),A))).
 
 
-%%%
-%%% In case the string is used in a javascript context, we need to take
-%%% care of quotes. It is assumed that we are working on an encoding
-%%% compatible with ASCII/Latin-1/Unicode.
-%%%
-%%% NB (11 May 2005): DO NOT USE SINGLE QUOTES IN JAVASCRIPT STRINGS !!!
-%%%                   (some browsers don't handle escaped single quotes)
-%%%
-%%%
--define(JTXT(S), gettext:quotes(?TXT(S))).
-
--define(JTXT2(S, Lang), gettext:quotes(?TXT2(S, Lang))).
-
 -endif.

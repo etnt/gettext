@@ -24,7 +24,7 @@
 
 -module(gettext).
 
--export([parse_po/1, lc2lang/1, quotes/1,
+-export([parse_po/1, lc2lang/1,
 	 parse_po_bin/1, all_lang/0, 
 	 key2str/1, key2str/2, key2str/3, 
 	 all_lcs/0, all_lcs/1,
@@ -158,17 +158,6 @@ lang2cset(Lang) ->
 
 lang2cset(Server, Lang) ->
     gen_server:call(Server, {lang2cset, Lang}, infinity).
-
-%%% --------------------------------------------------------------------
-%%% In case the string is used in a javascript context,
-%%% we need to take care of quotes.
-%%% --------------------------------------------------------------------
-
-%% @private
-quotes([$'|T]) -> [$\\,$' | quotes(T)];
-quotes([$"|T]) -> [$\\,$" | quotes(T)];
-quotes([H|T])  -> [H      | quotes(T)];
-quotes([])     -> [].
 
 %%% --------------------------------------------------------------------
 %%% Parse a PO-file
