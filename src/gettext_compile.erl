@@ -197,8 +197,7 @@ parse_transform(Form,Opts) ->
 	    ?debug( "--- Opts --- ~p~n",[Opts]),
 	    ?debug("--- Env --- isd_type=~p , gettext_dir=~p~n", 
 		   [Gettext_App_Name,GtxtDir]),
-	    pt(Form, Opts),
-	    close_file(),
+            try pt(Form, Opts) after close_epot_file() end,
 	    Form;
 	_ ->
 	    Form
