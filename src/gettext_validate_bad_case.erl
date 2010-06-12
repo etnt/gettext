@@ -87,11 +87,58 @@ case_changed(Case1, Case2) ->
 %%         but can in this case checker context be considred to be case less
 %%         as well
 has_case(Char) ->
-    [CU] = text:to_upper([Char]),
-    [CL] = text:to_lower([Char]),
+    [CU] = to_upper([Char]),
+    [CL] = to_lower([Char]),
     case {CU == Char, CL == Char} of
 	{true,  true}  -> case_less; 
 	{true,  false} -> upper;
 	{false, true}  -> lower
 	%% {false, false}    should only happen if to_upper/to_lower is broken
     end.
+
+%%-----------------------------------------------------------------------------
+%% Function: to_upper(Str)
+%%           to_upper(Char)
+%%           to_lower(Str)
+%%           to_lower(Char)
+%% Descrip.: modified http_util:to_upper / to_lower version to handle the full
+%%           range of latin-1.
+%%           The char() version is useful if chars are converted as needed, for
+%%           example while matching strings (char by char).
+%% Returns : char() | string() - convereted to upper / lower case
+%% note    : based on info at http://www.htmlhelp.com/reference/charset/
+%% note    : handles both 7bit ASCII and Latin-1 (ISO 8895-1)
+%%-----------------------------------------------------------------------------
+
+to_upper(Str) when is_list(Str) ->
+    [to_upper(C) || C <- Str];
+
+
+to_upper(C) when C >= $a, C =< $z ->
+    C-($a-$A);
+%% 224 = a grave, 246 = o umlaut
+%% 192 = A grave
+to_upper(C) when C >= 224, C =< 246 -> 
+    C-(224 - 192);
+%% 248 = o slash, 254 = thorn
+%% 216 = O slash
+to_upper(C) when C >= 248, C =< 254 -> 
+    C-(248 - 216);
+to_upper(C) ->
+    C.
+
+to_lower(Str) when is_list(Str) ->
+    [to_lower(C) || C <- Str];
+
+to_lower(C) when C >= $A, C =< $Z ->
+    C+($a-$A);
+%% 192 = A grave, 214 = O umlaut
+%% 224 = a grave
+to_lower(C) when C >= 192, C =< 214 -> 
+    C+(224 - 192);
+%% 216 = O slash, 222 = THORN
+%% 248 = o slash
+to_lower(C) when C >= 216, C =< 222 -> 
+    C+(248 - 216);
+to_lower(C) ->
+    C.
