@@ -81,8 +81,16 @@ write_pretty(Str, Fd) ->
 
 write_string(Str, Fd) ->
     file:write(Fd, "\""),
-    file:write(Fd, Str),
+    file:write(Fd, escape_chars(Str)),
     file:write(Fd, "\"\n").
+
+escape_chars(Str) ->
+    F = fun($", Acc)  -> [$\\,$"|Acc];
+           ($\\, Acc) -> [$\\,$\\|Acc];
+           ($\n, Acc) -> [$\\,$n|Acc];
+	   (C, Acc)   -> [C|Acc] 
+	end,
+    lists:foldr(F, [], Str).
 
 
 %%% Split the string into substrings, 
@@ -278,21 +286,13 @@ dump("", _) -> ok;
 dump(Str,L) -> 
     Fname = get(fname),
     Finfo = get_file_info(Str),
-    dets:insert(?EPOT_TABLE, {escape_chars(Str), [{Fname,L}|Finfo]}).
+    dets:insert(?EPOT_TABLE, {Str, [{Fname,L}|Finfo]}).
 
 get_file_info(Key) ->
     case dets:lookup(?EPOT_TABLE, Key) of
 	[]            -> [];
 	[{_,Finfo}|_] -> Finfo
     end.
-
-escape_chars(Str) ->
-    F = fun($", Acc)  -> [$\\,$"|Acc];
-           ($\\, Acc) -> [$\\,$\\|Acc];
-           ($\n, Acc) -> [$\\,$n|Acc];
-	   (C, Acc)   -> [C|Acc] 
-	end,
-    lists:foldr(F, [], Str).
 
 open_epot_file(Gettext_App_Name, GtxtDir) ->
     Fname = mk_epot_fname(Gettext_App_Name, GtxtDir),
