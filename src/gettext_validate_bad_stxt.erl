@@ -59,11 +59,11 @@ check({OriginalFormatStr, TranslatedFormatStr},
 	catch _:_ ->
 		throw(ThrowMsg)
 	end,
-    InterSect = lists_ext:intersection(Vars1, Vars2),
+    InterSect = intersection(Vars1, Vars2),
     %% some $...$ are unused
-    OkButSuspect = lists_ext:subtract(Vars1, Vars2),
+    OkButSuspect = subtract(Vars1, Vars2),
     %% translation contains unkown $...$
-    BadVars      = lists_ext:subtract(Vars2, Vars1),
+    BadVars      = subtract(Vars2, Vars1),
     
     case {length(InterSect), length(OkButSuspect), length(BadVars)} of
 	{_,Suspect,Bad} when (Bad > 0) and (Suspect > 0) ->
@@ -110,3 +110,26 @@ check({OriginalFormatStr, TranslatedFormatStr},
 	    Acc
     end.
 
+%%-----------------------------------------------------------------------------
+%% Function: subtract(L1,L2)
+%%           L1, L2 = list() of term()
+%% Descrip.: remove any instance of L2 element form L1
+%% Returns : list() of term()
+%%-----------------------------------------------------------------------------
+subtract(L1,L2) ->
+    Set1 = sets:from_list(L1),
+    Set2 = sets:from_list(L2),
+    RemSet = sets:subtract(Set1, Set2),
+    sets:to_list(RemSet).
+    
+%%-----------------------------------------------------------------------------
+%% Function: intersection(L1,L2)
+%%           L1, L2 = list() of term()
+%% Descrip.: Return intersection of L1 and L2
+%% Returns : list() of term()
+%%-----------------------------------------------------------------------------
+intersection(L1,L2) ->
+    Set1 = sets:from_list(L1),
+    Set2 = sets:from_list(L2),
+    IntSet = sets:intersection(Set1, Set2),
+    sets:to_list(IntSet).
