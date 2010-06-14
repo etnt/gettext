@@ -1,4 +1,5 @@
 
+
 all:
 	(cd src;$(MAKE))
 
@@ -10,3 +11,8 @@ docs:
 
 example:
 	$(MAKE) -f Makefile.gettext
+
+.PHONY: init
+init:
+	$(MAKE) -f Makefile.init
+
