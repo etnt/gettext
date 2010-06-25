@@ -239,7 +239,8 @@ eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
 to_list(A) when is_atom(A)    -> atom_to_list(A);
 to_list(I) when is_integer(I) -> integer_to_list(I);
-to_list(B) when is_binary(B)  -> binary_to_list(B);
+%%to_list(B) when is_binary(B)  -> binary_to_list(B);
+to_list(B) when is_binary(B)  -> unicode:characters_to_list(B);
 to_list(L) when is_list(L)    -> L.
 
 
