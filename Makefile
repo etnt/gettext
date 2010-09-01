@@ -5,6 +5,8 @@ all:
 clean:
 	(cd src;$(MAKE) clean)
 
+conf_clean:
+
 docs:
 	(cd src;$(MAKE) docs)
 
