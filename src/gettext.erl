@@ -19,7 +19,7 @@
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
 %% Created: 27 Oct 2003 by tobbe@bluetail.com
-%% @author Torbjörn Törnkvist <tobbe@bluetail.com>
+%% @author Torbjï¿½rn Tï¿½rnkvist <tobbe@bluetail.com>
 %% @doc Erlang Gettext tools for multi-lingual capabilities
 
 -module(gettext).
@@ -257,7 +257,7 @@ all_lang() -> gettext_iso639:all3lang().
 %%% The check in the last clause: the intervals 
 %%% 1. Hd > 64 andalso Hd < 91   = Uppercase Alpha numerical characters
 %%% 2. Hd > 96 andalso Hd < 123  = Lowercase Alpha numerical characters
-%%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. å)
+%%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. ï¿½)
 %%% 3. Hd > 47 andalso Hd < 58   = Numbers
 %%% sees to that only Alphanumerical characters is replaced, to keep 
 %%% special characters, so that the context will remain to a higher 

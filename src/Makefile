@@ -1,6 +1,4 @@
 
-include ../../../support/include.mk
-
 include ../vsn.mk
 VSN=$(GETTEXT_VSN)
 
@@ -47,4 +45,5 @@ clean:
 	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
 	  ../doc/stylesheet.css ../doc/erlang.png
 
-../ebin/%.beam: $(INCLUDES)
+../ebin/%.beam: %.erl $(INCLUDES)
+	erlc -o ../ebin $<
