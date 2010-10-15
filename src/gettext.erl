@@ -37,6 +37,8 @@
 	 store_pofile/2, store_pofile/3, 
 	 lang2cset/1, lang2cset/2]).
 
+-export([get_app_key/2, mk_polish_style_header/1]).
+
 -include("gettext_internal.hrl").
 
 -define(DEFAULT_SERVER, gettext_server).
@@ -312,3 +314,73 @@ search_for([Hd|Tl], Acc, ToLookFor) ->
 	_ ->
 	    search_for(Tl, [Hd|Acc], ToLookFor)
     end.
+
+%% @spec get_app_key() -> String
+%% @doc Get an application environment variable; fallback to a default value.
+get_app_key(Key, Default) ->
+    %% Crash if not-loadable...
+    case application:load(gettext) of
+        ok                               -> get_env(Key, Default);
+        {error,{already_loaded,gettext}} -> get_env(Key, Default)
+    end.
+
+get_env(Key, Default) ->
+    case application:get_env(gettext, Key) of
+        {ok, Value} -> Value;
+        _           -> Default
+    end.
+
+
+fixed_last_translator() ->
+    get_app_key(fixed_last_translator, "Gettext-POlish system").
+
+fixed_revision_date() ->
+    get_app_key(fixed_revision_date, create_date()).
+
+create_date() ->
+    get_app_key(create_date, "2006-07-01 16:45+0200").
+
+charset() ->
+    get_app_key(charset, "iso-8859-1").
+    
+team() ->
+    get_app_key(team, "Team <info@team.com>").
+    
+org_name() ->
+    get_app_key(team, "Organization").
+    
+copyright() ->
+    get_app_key(copyright, "YYYY Organization").
+    
+
+
+mk_polish_style_header(LC) ->
+    OrgName = org_name(),
+    mk_polish_style_header(
+      OrgName++" PO file for "++get_language_name(LC),
+      copyright(),
+      create_date(),
+      fixed_revision_date(),
+      fixed_last_translator(),
+      team(),
+      charset()
+     ).
+
+mk_polish_style_header(Header, CopyRight, CreateDate, RevDate, 
+                       LastTranslator, Team, Charset) ->
+    "# "++Header++"\n"
+        "# Copyright (C) "++CopyRight++"\n"
+        "#\n"
+        "msgid \"\"\n"
+        "msgstr \"\"\n"
+        "\"Project-Id-Version: PACKAGE VERSION\\n\"\n"
+        "\"POT-Creation-Date: "++CreateDate++"\\n\"\n"
+        "\"PO-Revision-Date: "++RevDate++"\\n\"\n"
+        "\"Last-Translator: "++LastTranslator++">\\n\"\n"
+        "\"Language-Team: "++Team++"\\n\"\n"
+        "\"MIME-Version: 1.0\\n\"\n"
+        "\"Content-Type: text/plain; charset="++Charset++"\\n\"\n"
+        "\"Content-Transfer-Encoding: 8bit\\n\"\n".
+
+get_language_name(undefined) -> "";
+get_language_name(LC)        -> gettext_iso639:lc2lang(LC).

@@ -27,6 +27,8 @@ ERLC_FLAGS+=-W
 
 INCLUDES=gettext_internal.hrl
 
+APPSCRIPT = '$$vsn=shift; $$mods=""; while(@ARGV){ $$_=shift; s/^([A-Z].*)$$/\'\''$$1\'\''/; $$mods.=", " if $$mods; $$mods .= $$_; } while(<>) { s/%VSN%/$$vsn/; s/%MODULES%/$$mods/; print; }'
+
 #
 # Targets
 #
@@ -47,3 +49,7 @@ clean:
 
 ../ebin/%.beam: %.erl $(INCLUDES)
 	erlc -o ../ebin $<
+
+../ebin/%.app: %.app.src ../vsn.mk Makefile
+	perl -e $(APPSCRIPT) "$(VSN)" $(MODULES) < $< > $@
+
