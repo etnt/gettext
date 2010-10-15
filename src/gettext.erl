@@ -37,7 +37,16 @@
 	 store_pofile/2, store_pofile/3, 
 	 lang2cset/1, lang2cset/2]).
 
--export([get_app_key/2, mk_polish_style_header/1]).
+-export([get_app_key/2
+         , mk_polish_style_header/1
+         , fixed_last_translator/0
+         , fixed_revision_date/0
+         , create_date/0 
+         , charset/0
+         , team/0
+         , org_name/0
+         , copyright/0
+        ]).
 
 -include("gettext_internal.hrl").
 
