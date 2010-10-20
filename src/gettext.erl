@@ -47,6 +47,7 @@
          , org_name/0
          , copyright/0
          , write_pretty/2
+         , get_language_name/1
         ]).
 
 -include("gettext_internal.hrl").
