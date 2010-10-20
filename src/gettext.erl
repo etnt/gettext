@@ -46,6 +46,7 @@
          , team/0
          , org_name/0
          , copyright/0
+         , write_pretty/2
         ]).
 
 -include("gettext_internal.hrl").
@@ -169,6 +170,12 @@ lang2cset(Lang) ->
 
 lang2cset(Server, Lang) ->
     gen_server:call(Server, {lang2cset, Lang}, infinity).
+
+
+%% @doc Pretty print PO strings.
+
+write_pretty(Str, Fd) ->
+    gettext_compile:write_pretty(Str, Fd).
 
 %%% --------------------------------------------------------------------
 %%% Parse a PO-file
