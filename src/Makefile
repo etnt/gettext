@@ -1,6 +1,4 @@
 
-include ../../../support/include.mk
-
 include ../vsn.mk
 VSN=$(GETTEXT_VSN)
 
@@ -29,6 +27,8 @@ ERLC_FLAGS+=-W
 
 INCLUDES=gettext_internal.hrl
 
+APPSCRIPT = '$$vsn=shift; $$mods=""; while(@ARGV){ $$_=shift; s/^([A-Z].*)$$/\'\''$$1\'\''/; $$mods.=", " if $$mods; $$mods .= $$_; } while(<>) { s/%VSN%/$$vsn/; s/%MODULES%/$$mods/; print; }'
+
 #
 # Targets
 #
@@ -47,4 +47,9 @@ clean:
 	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
 	  ../doc/stylesheet.css ../doc/erlang.png
 
-../ebin/%.beam: $(INCLUDES)
+../ebin/%.beam: %.erl $(INCLUDES)
+	erlc -o ../ebin $<
+
+../ebin/%.app: %.app.src ../vsn.mk Makefile
+	perl -e $(APPSCRIPT) "$(VSN)" $(MODULES) < $< > $@
+

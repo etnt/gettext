@@ -1,0 +1,14 @@
+include vsn.mk
+
+MODULES_SRC := $(wildcard src/*.erl)
+MODULES     := $(MODULES_SRC:src/%.erl=%.erl)
+APP_SOURCES := $(wildcard src/*.app.src)
+APP_OBJECTS := $(APP_SOURCES:src/%.app.src=ebin/%.app)
+
+APPSCRIPT = '$$vsn=shift; $$mods=""; while(@ARGV){ $$_=shift; s/^([A-Z].*)$$/\'\''$$1\'\''/; $$mods.=", " if $$mods; $$mods .= $$_; } while(<>) { s/%VSN%/$$vsn/; s/%MODULES%/$$mods/; print; }'
+
+init: $(APP_OBJECTS)
+
+ebin/%.app: src/%.app.src vsn.mk Makefile
+	echo $(MODULES) 
+	perl -e $(APPSCRIPT) "$(GETTEXT_VSN)" $(MODULES) < $< > $@

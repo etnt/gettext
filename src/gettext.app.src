@@ -3,7 +3,24 @@
   {vsn,"%VSN%"},
   {modules,[%MODULES%]},
   {registered,[]},
-  {env, []},
+  {env, 
+   [%% During frequent translation work in a large organization
+    %% with numerous topic branches, all introducing changes to
+    %% the PO-files, it quickly becomes very annoying getting header
+    %% diffs in the PO-files. With the introduction of the POlish
+    %% tool we therefore introduced a fixed PO-file header.
+    %% The old behaviour is retained by setting the 'use_orig_header'
+    %% to 'true'.
+    {use_orig_header,           false}
+    , {charset,                 "iso-8859-1"}
+    , {copyright,               "YYYY Organization"}
+    , {create_date,             "2006-07-01 16:45+0200"}
+    , {fixed_last_translator,   "Gettext-POlish system"}
+    , {fixed_revision_date,     "2006-07-01 16:45+0200"}
+    , {org_name,                "Organization"}
+    , {team,                    "Team <info@team.com>"}
+   ]},
   {mod, {gettext_app, []}},
-  {applications,[kernel,stdlib]}
- ]}.
+  {applications,[kernel,stdlib,sasl]}
+]}.
+

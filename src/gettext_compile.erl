@@ -26,6 +26,7 @@
 -module(gettext_compile).
 
 -export([parse_transform/2, epot2po/0]).
+-export([write_pretty/2]).
 
 -include("gettext_internal.hrl").
 
@@ -46,7 +47,7 @@ epot2po() ->
     Es = lists:keysort(1, get_epot_data()),
     close_epot_file(),
     open_po_file(Gettext_App_Name, GtxtDir, DefLang),
-    write_header(),
+    write_header(DefLang),
     write_entries(Es),
     close_file(),
     init:stop().
@@ -70,6 +71,7 @@ write_entries(L) ->
 write_pretty(Str) ->
     write_pretty(Str, get(fd)).
 
+%% Exported for use by POlish.
 write_pretty([], _) ->
     true;
 write_pretty(Str, Fd) when length(Str) =< ?ENDCOL ->
@@ -81,8 +83,16 @@ write_pretty(Str, Fd) ->
 
 write_string(Str, Fd) ->
     file:write(Fd, "\""),
-    file:write(Fd, Str),
+    file:write(Fd, escape_chars(Str)),
     file:write(Fd, "\"\n").
+
+escape_chars(Str) ->
+    F = fun($", Acc)  -> [$\\,$"|Acc];
+           ($\\, Acc) -> [$\\,$\\|Acc];
+           ($\n, Acc) -> [$\\,$n|Acc];
+	   (C, Acc)   -> [C|Acc] 
+	end,
+    lists:foldr(F, [], Str).
 
 
 %%% Split the string into substrings, 
@@ -153,29 +163,34 @@ split_string([], _End, _N, Acc) ->
 %%%	end,
 %%%    lists:foldr(F,[],Finfo).
 
-write_header() ->
-    io:format(get(fd),
-	      "# SOME DESCRIPTIVE TITLE.\n"
-	      "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER\n"
-	      "# This file is distributed under the same license as the "
-	      "PACKAGE package.\n"
-	      "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.\n"
-	      "#\n"
-	      "# NB: Consider using poEdit <http://poedit.sourceforge.net>\n"
-	      "#\n"
-	      "#\n"
-	      "#, fuzzy\n"
-	      "msgid \"\"\n"
-	      "msgstr \"\"\n"
-	      "\"Project-Id-Version: PACKAGE VERSION\\n\"\n"
-	      "\"POT-Creation-Date: 2003-10-21 16:45+0200\\n\"\n"
-	      "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"\n"
-	      "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"\n"
-	      "\"Language-Team: LANGUAGE <LL@li.org>\\n\"\n"
-	      "\"MIME-Version: 1.0\\n\"\n"
-	      "\"Content-Type: text/plain; charset=iso-8859-1\\n\"\n"
-	      "\"Content-Transfer-Encoding: 8bit\\n\"\n",
-	      []).
+write_header(LC) ->
+    io:format(get(fd), mk_header(LC), []).
+
+mk_header(LC) ->
+    mk_header(gettext:get_app_key(use_orig_header, true), LC).
+
+mk_header(false = _UseOrigHeader,  LC) -> gettext:mk_polish_style_header(LC);
+mk_header(true  = _UseOrigHeader, _LC) ->
+    "# SOME DESCRIPTIVE TITLE.\n"
+        "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER\n"
+        "# This file is distributed under the same license as the "
+        "PACKAGE package.\n"
+        "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.\n"
+        "#\n"
+        "# NB: Consider using poEdit <http://poedit.sourceforge.net>\n"
+        "#\n"
+        "#\n"
+        "#, fuzzy\n"
+        "msgid \"\"\n"
+        "msgstr \"\"\n"
+        "\"Project-Id-Version: PACKAGE VERSION\\n\"\n"
+        "\"POT-Creation-Date: 2003-10-21 16:45+0200\\n\"\n"
+        "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"\n"
+        "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"\n"
+        "\"Language-Team: LANGUAGE <LL@li.org>\\n\"\n"
+        "\"MIME-Version: 1.0\\n\"\n"
+        "\"Content-Type: text/plain; charset=iso-8859-1\\n\"\n"
+        "\"Content-Transfer-Encoding: 8bit\\n\"\n".
 
  
 %%% --------------------------------------------------------------------
@@ -197,8 +212,7 @@ parse_transform(Form,Opts) ->
 	    ?debug( "--- Opts --- ~p~n",[Opts]),
 	    ?debug("--- Env --- isd_type=~p , gettext_dir=~p~n", 
 		   [Gettext_App_Name,GtxtDir]),
-	    pt(Form, Opts),
-	    close_file(),
+            try pt(Form, Opts) after close_epot_file() end,
 	    Form;
 	_ ->
 	    Form
@@ -279,21 +293,13 @@ dump("", _) -> ok;
 dump(Str,L) -> 
     Fname = get(fname),
     Finfo = get_file_info(Str),
-    dets:insert(?EPOT_TABLE, {escape_chars(Str), [{Fname,L}|Finfo]}).
+    dets:insert(?EPOT_TABLE, {Str, [{Fname,L}|Finfo]}).
 
 get_file_info(Key) ->
     case dets:lookup(?EPOT_TABLE, Key) of
 	[]            -> [];
 	[{_,Finfo}|_] -> Finfo
     end.
-
-escape_chars(Str) ->
-    F = fun($", Acc)  -> [$\\,$"|Acc];
-           ($\\, Acc) -> [$\\,$\\|Acc];
-           ($\n, Acc) -> [$\\,$n|Acc];
-	   (C, Acc)   -> [C|Acc] 
-	end,
-    lists:foldr(F, [], Str).
 
 open_epot_file(Gettext_App_Name, GtxtDir) ->
     Fname = mk_epot_fname(Gettext_App_Name, GtxtDir),

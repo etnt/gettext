@@ -452,7 +452,15 @@ insert_data(TableName, Dir, L) ->
 		   (LC, Acc)         ->
 			Fname = filename:join([Dir, LC, ?POFILE]),
 			insert_po_file(TableName, LC, Fname),
-			[#cache{language = LC} | Acc]
+                        case lookup(TableName, LC, ?GETTEXT_HEADER_INFO) of
+                            ?GETTEXT_HEADER_INFO ->
+                                %% nothing found...
+                                ?elog("Could not find header info for lang: ~s~n",[LC]),
+                                [#cache{language = LC} | Acc];
+                            Pfinfo ->
+                                CS = get_charset(Pfinfo),
+                                [#cache{language = LC, charset = CS}|Acc]
+                        end
 		end,
 	    lists:foldl(F, L, Dirs);
 	_ ->
