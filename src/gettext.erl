@@ -332,8 +332,7 @@ search_for([Hd|Tl], Acc, ToLookFor) ->
 	    search_for(Tl, [Hd|Acc], ToLookFor)
     end.
 
-%% @spec get_app_key() -> String
-%% @doc Get an application environment variable; fallback to a default value.
+%% Get an application environment variable; fallback to a default value.
 get_app_key(Key, Default) ->
     %% Crash if not-loadable...
     case application:load(gettext) of
