@@ -302,7 +302,7 @@ do_check_spaces(Key, NextKey, QueryLang, RetValue, Value) ->
     case check_spaces(Value,RetValue) of  			     
         ok ->
             next_non_translated(NextKey,QueryLang);
-        Args->%Args have info about where spaces missmatch
+        Args->%Args have info about where spaces mismatch
             [NextKey,Key,Args,
              spaces_warning]
     end.
