@@ -19,7 +19,7 @@
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
 %% @private
-%% @author Hï¿½kan Stenholm <hokan@kreditor.se>
+%% @author Håkan Stenholm <hokan@kreditor.se>
 %% @doc Try to find texts that should/shouldn't start on upper case
 %% depending on if the text is the start of a sentence or not - e.g.,
 %% Swedish text usually only uses upper case at sentence start (and in
