@@ -25,7 +25,7 @@
 %% NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 %% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %%
-%% Created: Tue Nov 25 20:53:36 2003
+%% @copyright 2003 Johan Bevemyr. All rights reserved.
 %% @private
 %% @author Johan Bevemyr <jb@bevemyr.com>
 %% @doc HTML parser from Yaws, to allow gettext_validate.erl to check HTML
