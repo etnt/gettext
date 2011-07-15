@@ -18,8 +18,8 @@
 %% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
-%% Created: 28 Oct 2003 
-%% @author tobbe@bluetail.com
+%% @copyright 2003 Torbjörn Törnkvist
+%% @author Torbjörn Törnkvist <tobbe@tornkvist.org>
 %% @doc Supervisor for the gettext application
 
 -module(gettext_sup).

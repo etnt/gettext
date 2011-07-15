@@ -78,17 +78,17 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 
 %% ----------------------------------------------------------------------------
 %% return: {L1, L2} | 
-%%         ws_missmatch (when initial whitespace differ)
+%%         ws_mismatch (when initial whitespace differ)
 text_with_no_ws_front([],[]) -> {[],[]};
-text_with_no_ws_front([], _) -> ws_missmatch; % different no. of whitespaces
-text_with_no_ws_front(_ ,[]) -> ws_missmatch; % different no. of whitespaces
+text_with_no_ws_front([], _) -> ws_mismatch; % different no. of whitespaces
+text_with_no_ws_front(_ ,[]) -> ws_mismatch; % different no. of whitespaces
 text_with_no_ws_front([C1|R1] = L1, [C2|R2] = L2) ->
     W1 = is_ws(C1), 
     W2 = is_ws(C2),
     case {C1, C2, W1, W2} of
 	{C, C, true,  true}  -> text_with_no_ws_front(R1,R2);
-	{_, _, true,  false} -> ws_missmatch; % different no. of whitespaces
-	{_, _, false, true}  -> ws_missmatch; % different no. of whitespaces
+	{_, _, true,  false} -> ws_mismatch; % different no. of whitespaces
+	{_, _, false, true}  -> ws_mismatch; % different no. of whitespaces
 	{_, _, false, false} -> {L1, L2}
     end.
 
@@ -96,7 +96,7 @@ text_with_no_ws_front([C1|R1] = L1, [C2|R2] = L2) ->
 ws_match(R1,R2) -> 
     case text_with_no_ws_front(R1,R2) of
 	{_,_}        -> true;
-	ws_missmatch -> false
+	ws_mismatch -> false
     end.
 
 %%  is whitespace (control char or space/nbsp/NL/CR/...)

@@ -5,9 +5,9 @@
 
 @title Erlang Gettext tools for multi-lingual capabilities
 
-@author Torbjörn Törnkvist <tobbe@kreditor.se>
+@author Torbjörn Törnkvist <tobbe@tornkvist.org>
 
-@copyright 2003-2008 Törbjorn Törnkvist
+@copyright 2003-2011 Törbjorn Törnkvist
 @version {@version}, {@date} {@time}
 
 @doc The 'gettext' application makes it possible to internationalize 

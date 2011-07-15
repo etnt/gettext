@@ -23,7 +23,7 @@ MODULES=gettext \
 EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
 ERL_FILES=$(MODULES:%=%.erl)
 
-ERLC_FLAGS+=-W
+ERLC_FLAGS+=+debug_info
 
 INCLUDES=gettext_internal.hrl
 
@@ -36,7 +36,7 @@ APPSCRIPT = '$$vsn=shift; $$mods=""; while(@ARGV){ $$_=shift; s/^([A-Z].*)$$/\'\
 all: $(EBIN_FILES)
 
 debug:
-	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) +debug_info -Ddebug"
+	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) -Ddebug"
 
 docs: ../doc/index.html
 
@@ -47,8 +47,8 @@ clean:
 	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
 	  ../doc/stylesheet.css ../doc/erlang.png
 
-../ebin/%.beam: %.erl $(INCLUDES)
-	erlc -o ../ebin $<
+../ebin/%.beam: %.erl $(INCLUDES) Makefile
+	erlc -o ../ebin $(ERLC_FLAGS) $<
 
 ../ebin/%.app: %.app.src ../vsn.mk Makefile
 	perl -e $(APPSCRIPT) "$(VSN)" $(MODULES) < $< > $@

@@ -45,9 +45,9 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 	   lists:reverse(OriginalFormatStr), 
 	   lists:reverse(TranslatedFormatStr)) of
 
-	%% look_for_bad_ws(...) will warn about whitespace missmatch
+	%% look_for_bad_ws(...) will warn about whitespace mismatch
 	%% so assume that user will find any punctuation bugs on revalidation
-	ws_missmatch  -> Acc; 
+	ws_mismatch  -> Acc; 
 
 	%% trailing white spaces are the same
 	{[], []} -> Acc;
@@ -74,7 +74,7 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 		      {bad_punctuation, OriginalFormatStr, 
 		       TranslatedFormatStr},
 		      {'Warning',
-		       "Trailing punctuation is missmatched.",
+		       "Trailing punctuation is mismatched.",
 		       {original,    OriginalFormatStr}, 
 		       {translation, TranslatedFormatStr}},
 		      Acc)
@@ -90,7 +90,7 @@ bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Ignores, Acc) ->
 	      Ignores,
 	      {bad_punctuation, OriginalFormatStr, TranslatedFormatStr},
 	      {'Warning',
-	       "Trailing punctuation is missmatched.",
+	       "Trailing punctuation is mismatched.",
 	       {original,    OriginalFormatStr}, 
 	       {translation, TranslatedFormatStr}},
 	      Acc);

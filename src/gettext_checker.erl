@@ -82,7 +82,7 @@ help() ->
 
 %% To be called from e.g a Makefile
 display_errors() ->
-    Lang = ["en","nb"],
+    Lang = gettext:all_lcs(),
     F = fun(LC) ->
                 FirstKey = get_first_key(),
                 non_translated_stats(FirstKey, LC, 0, 0, 0)
@@ -302,7 +302,7 @@ do_check_spaces(Key, NextKey, QueryLang, RetValue, Value) ->
     case check_spaces(Value,RetValue) of  			     
         ok ->
             next_non_translated(NextKey,QueryLang);
-        Args->%Args have info about where spaces missmatch
+        Args->%Args have info about where spaces mismatch
             [NextKey,Key,Args,
              spaces_warning]
     end.
@@ -333,7 +333,7 @@ get_int(Prompt)->
     case string:to_integer(Value) of
 	{error,_Reason}->
 	    {error,Value};
-	{Num,_Float}->
+	{Num,_Rest}->
 	    Num
     end.
 
@@ -566,7 +566,8 @@ print_possibilities(List,no_key) ->
     io:format("possible values:~n",[]),
     F = fun(X,Acc) ->
 		{_Key,Val} = X,				
-		String  = Acc++". "++show_string(Val)++"~n",
+		Num = integer_to_list(Acc),
+		String = Num++". "++show_string(Val)++"~n",
 		io:format("~p~n",[String]),
 		Acc+1
 	end,
@@ -576,7 +577,8 @@ print_possibilities(List,_Other) ->
     F = fun(X,Acc) ->
 		{Key,Val} = X,
 		
-		String  = Acc++". Key:"++show_string(Key)++" Val:"++
+		Num = integer_to_list(Acc),
+		String = Num++". Key:"++show_string(Key)++" Val:"++
 		    show_string(Val)++"~n",
 		io:format("~p~n",[String]),
 		Acc+1
@@ -673,8 +675,8 @@ min(A,B,C) ->
 %%
 get_comments(Key)  ->
     [_Header |FileCommentsQuery] = 
-	parse_po_comment(filename:join([?ROOT_DIR, ?CUSTOM_DIR, "en",
-					?POFILE])),
+	parse_po_comment(filename:join([?ROOT_DIR, ?CUSTOM_DIR,
+                                        gettext:default_lang(), ?POFILE])),
     case lists:keysearch(Key,1,FileCommentsQuery) of
 	{value, {_,Res}} ->
 	    Res;
@@ -857,7 +859,7 @@ parse_po_comment(Fname) ->
     parse_po_bin_comment(Bin).
 
 parse_po_bin_comment(Bin) ->
-    parse_po_file_comment(to_list(Bin),[]).
+    parse_po_file_comment(binary_to_list(Bin),[]).
 
 parse_po_file_comment("msgid" ++ T,FileList) ->
     {Key, R0} = get_po_string(T),
@@ -914,12 +916,6 @@ eat_more([$\t|T], Acc) -> eat_more(T, Acc);
 eat_more([$"|T], Acc)  -> eat_string(T, Acc);               %" make emacs happy
 eat_more(T, Acc)       -> {lists:reverse(Acc), T}.
 
-
-
-to_list(A) when is_atom(A)    -> atom_to_list(A);
-to_list(I) when is_integer(I) -> integer_to_list(I);
-to_list(B) when is_binary(B)  -> binary_to_list(B);
-to_list(L) when is_list(L)    -> L.
 
 %% this function saves new entry in dets 'bugs' table which is placed in
 %% ROOT_DIR 
@@ -1047,7 +1043,7 @@ get_new_key(Similar) ->
 get_new_value(Similar,ProperVal) ->
     
     case get_int('Value>') of
-	{error,user} ->
+	{error,""} ->
 	    ProperVal;
 	{error,Input}->
 	    Input;
