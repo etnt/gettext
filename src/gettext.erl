@@ -18,8 +18,8 @@
 %% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
-%% Created: 27 Oct 2003 by tobbe@bluetail.com
-%% @author Torbjï¿½rn Tï¿½rnkvist <tobbe@bluetail.com>
+%% @copyright 2003 Torbjörn Törnkvist
+%% @author Torbjörn Törnkvist <tobbe@tornkvist.org>
 %% @doc Erlang Gettext tools for multi-lingual capabilities
 
 -module(gettext).

@@ -18,8 +18,8 @@
 %% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
-%% Created:  9 Mar 2004 by <tobbe@bluetail.com>
-%% @author tobbe@bluetail.com
+%% @copyright 2004 Torbjörn Törnkvist
+%% @author Torbjörn Törnkvist <tobbe@tornkvist.org>
 %% @doc ISO 639 2- and 3-letter codes.
 %% @private
 

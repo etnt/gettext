@@ -50,7 +50,7 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 	      Ignores,
 	      {bad_ftxt, OriginalFormatStr, TranslatedFormatStr},
 	      {'ERROR',
-	       "Format string missmatch.",
+	       "Format string mismatch.",
 	       {original,         OriginalFormatStr}, 
 	       {translation,      TranslatedFormatStr}, 
 	       {original_tags,    Tags1}, 
