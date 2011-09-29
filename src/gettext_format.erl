@@ -39,7 +39,7 @@
 %% ----------------------------------------------------------------------------
 %% @spec stxt(FormatStr::string(), 
 %%            Args::[{Key::atom(),SubVal::string()}]) -> string()
-%% @doc  This function is similar to ?FTXT but alows the FormatStr to use
+%% @doc  This function is similar to io_lib:format/2 but allows FormatStr to use
 %%       Args in any order, any number of times or not at all.
 %%       This is needed for translators of po files to be able to write
 %%       translations with a natural scentence structure. 

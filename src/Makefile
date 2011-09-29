@@ -10,7 +10,6 @@ MODULES=gettext \
 	gettext_validate_no_trans \
 	gettext_validate_bad_case \
 	gettext_validate_bad_punct \
-	gettext_validate_bad_ftxt \
 	gettext_validate_bad_stxt \
 	gettext_validate_bad_html \
 	gettext_validate_bad_ws \

@@ -28,7 +28,6 @@
 %% A number of default checkers that should work on most texts can check
 %% for:
 %% <ul>
-%% <li>incorrect FTXT argument usage</li>
 %% <li>incorrect STXT argument usage</li>
 %% <li>incorrect whitespace at front/tail of text</li>
 %% <li>missing translations</li>
@@ -60,7 +59,7 @@
 %%    ErrorMsg::string(), 
 %%    Pairs::{Name::atom(), Info::term()} ....}'''
 %% where `alert_level()' is either `` 'ERROR' '', indicating an error that
-%% may cause a crash (e.g., in STXT/FTXT) or generate invalid output, or ``
+%% may cause a crash (e.g., in STXT) or generate invalid output, or ``
 %% 'Warning' '', indicating a possible problem. `Pairs' contain check
 %% specific error information - usually at least the msgid and msgstr, so
 %% that they can be found in a po file and fixed.
@@ -130,9 +129,7 @@ validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
 %% @spec validate(PoFilePath::string(), IgnoreFilePath::[]|string(),
 %%                Opts::[{Key, Val}]) -> ok | output()
 %% @doc  Takes a valid (parsable) po file and checks that there are no 
-%%       inconsistencies between the msgid and msgstr texts. E.g.,
-%%       checks that ?FTXT format strings contain the same set of "~..."
-%%       parameters, etc.
+%%       inconsistencies between the msgid and msgstr texts.
 %% 
 %%       The function prints a result listing.
 %% 
@@ -277,7 +274,6 @@ default_opts() ->
 		 gettext_validate_no_trans,
 		 gettext_validate_bad_case,
 		 gettext_validate_bad_punct,
-		 gettext_validate_bad_ftxt,  
 		 gettext_validate_bad_html,
 		 gettext_validate_bad_ws]}
     ].
