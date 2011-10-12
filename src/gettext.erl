@@ -46,6 +46,7 @@
          , team/0
          , org_name/0
          , copyright/0
+         , callback_mod/0
          , write_pretty/2
          , get_language_name/1
         ]).
@@ -368,6 +369,9 @@ org_name() ->
 copyright() ->
     get_app_key(copyright, "YYYY Organization").
     
+callback_mod() ->
+    get_app_key(callback_mod, gettext_server).
+
 
 
 mk_polish_style_header(LC) ->
