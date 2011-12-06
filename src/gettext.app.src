@@ -1,7 +1,23 @@
-{application,gettext,
+{application, gettext,
  [{description,"gettext handling"},
-  {vsn,"%VSN%"},
-  {modules,[%MODULES%]},
+  {vsn,"2.1.0"},
+  {modules,[gettext
+          , gettext_compile
+          , gettext_format
+          , gettext_server
+          , gettext_validate
+          , gettext_validate_no_trans
+          , gettext_validate_bad_case
+          , gettext_validate_bad_punct
+          , gettext_validate_bad_stxt
+          , gettext_validate_bad_html
+          , gettext_validate_bad_ws
+          , gettext_yaws_html
+          , gettext_checker
+          , gettext_sup
+          , gettext_app
+          , gettext_iso639
+          ]},
   {registered,[]},
   {env, 
    [%% During frequent translation work in a large organization
@@ -23,4 +39,3 @@
   {mod, {gettext_app, []}},
   {applications,[kernel,stdlib,sasl]}
 ]}.
-
