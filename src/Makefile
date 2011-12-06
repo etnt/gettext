@@ -19,14 +19,12 @@ MODULES=gettext \
 	gettext_app \
 	gettext_iso639 
 
-EBIN_FILES=$(MODULES:%=../ebin/%.beam) ../ebin/gettext.app
+EBIN_FILES=$(MODULES:%=../ebin/%.beam)
 ERL_FILES=$(MODULES:%=%.erl)
 
 ERLC_FLAGS+=+debug_info
 
 INCLUDES=gettext_internal.hrl
-
-APPSCRIPT = '$$vsn=shift; $$mods=""; while(@ARGV){ $$_=shift; s/^([A-Z].*)$$/\'\''$$1\'\''/; $$mods.=", " if $$mods; $$mods .= $$_; } while(<>) { s/%VSN%/$$vsn/; s/%MODULES%/$$mods/; print; }'
 
 #
 # Targets
@@ -48,7 +46,4 @@ clean:
 
 ../ebin/%.beam: %.erl $(INCLUDES) Makefile
 	erlc -o ../ebin $(ERLC_FLAGS) $<
-
-../ebin/%.app: %.app.src ../vsn.mk Makefile
-	perl -e $(APPSCRIPT) "$(VSN)" $(MODULES) < $< > $@
 
