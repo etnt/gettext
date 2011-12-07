@@ -1,7 +1,7 @@
-{application,gettext,
+{application, gettext,
  [{description,"gettext handling"},
-  {vsn,"%VSN%"},
-  {modules,[%MODULES%]},
+  {vsn,"2.1.0"},
+  {modules,[]},
   {registered,[]},
   {env, 
    [%% During frequent translation work in a large organization
@@ -23,4 +23,3 @@
   {mod, {gettext_app, []}},
   {applications,[kernel,stdlib,sasl]}
 ]}.
-
