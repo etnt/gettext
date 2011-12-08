@@ -185,7 +185,8 @@ get_default_lang(CallBackMod) ->
 %%--------------------------------------------------------------------
 handle_call({key2str, Key, Lang}, _From, State) ->
     TableName = State#state.table_name,
-    Reply = lookup(TableName, Lang, Key),
+	DefaultLang = State#state.def_lang,
+    Reply = lookup(TableName, Lang, DefaultLang, Key),
     {reply, Reply, State};
 %%
 handle_call({lang2cset, Lang}, _From, State) ->
@@ -500,8 +501,14 @@ insert(TableName, LC, L) ->
     lists:foreach(F, L).
 
 lookup(TableName, Lang, Key) ->
+	lookup(TableName, Lang, Lang, Key).
+
+lookup(TableName, Lang, DefaultLang, Key) ->
     try ets:lookup(get(ets_table), ?KEY(Lang, Key)) of
-	[]          -> Key;  
+	[] ->  case string:equal(Lang, DefaultLang) of
+				true -> Key;
+				false -> lookup(TableName, DefaultLang, Key)
+			end;
 	[?ENTRY(_,_,Str)|_] -> Str
     catch
         _:_ ->
