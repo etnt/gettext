@@ -120,10 +120,11 @@ start(CallBackMod, Name) ->
 %%          ignore               |
 %%          {stop, Reason}
 %%--------------------------------------------------------------------
-init([CallBackMod0, Name]) ->
+init([CallBackModConfig, Name]) ->
+	{CallBackMod0, Config} = CallBackModConfig,
     CallBackMod = get_callback_mod(CallBackMod0),
-    GettextDir = get_gettext_dir(CallBackMod),
-    DefLang = get_default_lang(CallBackMod),
+    GettextDir = get_gettext_dir(CallBackMod, Config),
+    DefLang = get_default_lang(CallBackMod, Config),
     TableNameStr = atom_to_list(Name) ++ "_db",
     TableName = list_to_atom(TableNameStr),
     Cache = create_db(TableName, GettextDir),
@@ -184,7 +185,8 @@ get_default_lang(CallBackMod) ->
 %%--------------------------------------------------------------------
 handle_call({key2str, Key, Lang}, _From, State) ->
     TableName = State#state.table_name,
-    Reply = lookup(TableName, Lang, Key),
+	DefaultLang = State#state.def_lang,
+    Reply = lookup(TableName, Lang, DefaultLang, Key),
     {reply, Reply, State};
 %%
 handle_call({lang2cset, Lang}, _From, State) ->
@@ -271,6 +273,18 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+get_default_lang(CallBackMod, Config) ->
+	case proplists:get_value(default_lang, Config) of
+		undefined -> get_default_lang(CallBackMod);
+		ConfLang -> ConfLang
+	end.
+
+get_gettext_dir(CallBackMod, Config) ->
+	case proplists:get_value(gettext_dir, Config) of
+		undefined -> get_gettext_dir(CallBackMod);
+		ConfDir -> ConfDir
+	end.
 
 db_filename(TableName, GettextDir) ->
     filename:join(GettextDir,  atom_to_list(TableName) ++ ".dets").
@@ -487,8 +501,14 @@ insert(TableName, LC, L) ->
     lists:foreach(F, L).
 
 lookup(TableName, Lang, Key) ->
+	lookup(TableName, Lang, Lang, Key).
+
+lookup(TableName, Lang, DefaultLang, Key) ->
     try ets:lookup(get(ets_table), ?KEY(Lang, Key)) of
-	[]          -> Key;  
+	[] ->  case string:equal(Lang, DefaultLang) of
+				true -> Key;
+				false -> lookup(TableName, DefaultLang, Key)
+			end;
 	[?ENTRY(_,_,Str)|_] -> Str
     catch
         _:_ ->
