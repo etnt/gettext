@@ -261,6 +261,9 @@ pt([{call,_,{remote,_,{atom,_,gettext},{atom,_,key2str}},
     dump(String, L5),
     [H | pt(T, Opts, Func)];
 %%%
+pt([{attribute,L,module,{Mod, _Params}} | T], Opts, Func) ->
+    pt([{attribute,L,module,Mod} | T], Opts, Func);
+%%%
 pt([{attribute,_L,module,Mod} = H | T], Opts, Func) ->
     put(fname, to_list(Mod) ++ ".erl"),
     ?debug( "++++++ Filename 1 =<~p>~n",[get(fname)]),
