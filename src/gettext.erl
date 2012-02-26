@@ -277,7 +277,7 @@ all_lang() -> gettext_iso639:all3lang().
 %%% The check in the last clause: the intervals 
 %%% 1. Hd > 64 andalso Hd < 91   = Uppercase Alpha numerical characters
 %%% 2. Hd > 96 andalso Hd < 123  = Lowercase Alpha numerical characters
-%%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. ï¿½)
+%%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. ï)
 %%% 3. Hd > 47 andalso Hd < 58   = Numbers
 %%% sees to that only Alphanumerical characters is replaced, to keep 
 %%% special characters, so that the context will remain to a higher 

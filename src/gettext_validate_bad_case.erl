@@ -83,7 +83,7 @@ case_changed(Case1, Case2) ->
 
 %% return: upper | lower | 
 %%         case_less (one variant char e.g. numbers, punctuation ...)
-%% note  : ï¿½ and y with double dots are technicaly a lower case only letters
+%% note  : ï and y with double dots are technicaly a lower case only letters
 %%         but can in this case checker context be considred to be case less
 %%         as well
 has_case(Char) ->
