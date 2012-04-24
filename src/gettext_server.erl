@@ -100,7 +100,7 @@ start_link(CallBackMod, Name) ->
 %%--------------------------------------------------------------------
 
 start() ->
-    start(?MODULE).
+    start({?MODULE, application:get_all_env()}).
 
 start(CallBackMod) ->
     start(CallBackMod, ?SERVER).
