@@ -3,7 +3,7 @@
 ##
 ## Add the directories here that should be gettext'ified
 ##
-TXT_DIRS = ../esmb
+TXT_DIRS=./test
 
 ##
 ## Set this to a directory where we have write access.
@@ -38,9 +38,9 @@ DEP_FILES=$(shell grep -s -l TXT $(DEP_FILES1) $(DEP_FILES2))
 gettext_example: $(GETTEXT_DIR)/lang/$(GETTEXT_TMP_NAME)/epot.dets 
 
 $(GETTEXT_DIR)/lang/$(GETTEXT_TMP_NAME)/epot.dets: $(DEP_FILES)
-	@(export gettext_tmp_name=$(GETTEXT_TMP_NAME); \
-	  export gettext_dir=$(GETTEXT_DIR); \
-	  export gettext_def_lang=$(GETTEXT_DEF_LANG); \
+	@(export GETTEXT_TMP_NAME=$(GETTEXT_TMP_NAME); \
+	  export GETTEXT_DIR=$(GETTEXT_DIR); \
+	  export GETTEXT_DEF_LANG=$(GETTEXT_DEF_LANG); \
 	  export ERL_COMPILER_OPTIONS="[gettext]"; \
 	  rm -f $(GETTEXT_DIR)/lang/$(GETTEXT_TMP_NAME)/epot.dets; \
 	  for xdir in $(TXT_DIRS); do \
