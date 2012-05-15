@@ -3,7 +3,7 @@
   {vsn,"2.1.0"},
   {modules,[]},
   {registered,[]},
-  {env, 
+  {env,
    [%% During frequent translation work in a large organization
     %% with numerous topic branches, all introducing changes to
     %% the PO-files, it quickly becomes very annoying getting header
