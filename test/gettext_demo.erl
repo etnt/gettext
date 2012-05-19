@@ -11,8 +11,3 @@ hello_world(LC) ->
     io:format("Using ?TXT/2: ~p~n", [?TXT2("Hello World", LC)]),
     put(gettext_language, "sv"),
     io:format("Using ?TXT/1: ~p~n", [?TXT("Hello World")]).
-
-
-
-    
-    
