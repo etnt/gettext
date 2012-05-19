@@ -135,43 +135,6 @@ init([CallBackModConfig, Name]) ->
 		table_name  = TableName
                }}.
 
-%%%
-%%% The GETTEXT_CBMOD environment variable takes precedence!
-%%%
-get_callback_mod(CallBackMod0) ->
-    case os:getenv(?ENV_CBMOD) of
-	false -> CallBackMod0;
-	CbMod -> list_to_atom(CbMod)
-    end.
-
-%%%
-%%% The GETTEXT_DIR environment variable takes precedence!
-%%% Next we will try to get hold of the value from the callback.
-%%%
-get_gettext_dir(CallBackMod) ->
-    case os:getenv(?ENV_ROOT_DIR) of
-	false ->
-	    try CallBackMod:gettext_dir()
-	    catch
-		_:_ -> gettext_dir() % fallback
-	    end;
-	Dir -> Dir
-    end.
-
-%%%
-%%% The GETTEXT_DIR environment variable takes precedence!
-%%% Next we will try to get hold of the value from the callback.
-%%%
-get_default_lang(CallBackMod) ->
-    case os:getenv(?ENV_DEF_LANG) of
-	false -> 
-	    case catch CallBackMod:gettext_def_lang() of
-		Dir when is_list(Dir) -> Dir;
-		_ -> gettext_def_lang() % fallback
-	    end;
-	DefLang -> DefLang
-    end.
-
 
 %%--------------------------------------------------------------------
 %% Function: handle_call/3
@@ -274,17 +237,43 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-get_default_lang(CallBackMod, Config) ->
-	case proplists:get_value(default_lang, Config) of
-		undefined -> get_default_lang(CallBackMod);
-		ConfLang -> ConfLang
-	end.
+get_callback_mod(CallBackMod0) ->
+    case os:getenv(?ENV_CBMOD) of
+	false -> CallBackMod0;
+	CbMod -> list_to_atom(CbMod)
+    end.
 
 get_gettext_dir(CallBackMod, Config) ->
 	case proplists:get_value(gettext_dir, Config) of
 		undefined -> get_gettext_dir(CallBackMod);
 		ConfDir -> ConfDir
 	end.
+
+get_gettext_dir(CallBackMod) ->
+    case os:getenv(?ENV_ROOT_DIR) of
+	false ->
+	    try CallBackMod:gettext_dir()
+	    catch
+		_:_ -> gettext_dir() % fallback
+	    end;
+	Dir -> Dir
+    end.
+
+get_default_lang(CallBackMod, Config) ->
+	case proplists:get_value(default_lang, Config) of
+		undefined -> get_default_lang(CallBackMod);
+		ConfLang -> ConfLang
+	end.
+
+get_default_lang(CallBackMod) ->
+    case os:getenv(?ENV_DEF_LANG) of
+	false ->
+	    case catch CallBackMod:gettext_def_lang() of
+		Dir when is_list(Dir) -> Dir;
+		_ -> gettext_def_lang() % fallback
+	    end;
+	DefLang -> DefLang
+    end.
 
 db_filename(TableName, GettextDir) ->
     filename:join(GettextDir,  atom_to_list(TableName) ++ ".dets").
