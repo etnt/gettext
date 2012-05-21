@@ -188,6 +188,7 @@ mk_header(true  = _UseOrigHeader, _LC) ->
         "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"\n"
         "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"\n"
         "\"Language-Team: LANGUAGE <LL@li.org>\\n\"\n"
+        "\"Language: LC\\n\""
         "\"MIME-Version: 1.0\\n\"\n"
         "\"Content-Type: text/plain; charset=iso-8859-1\\n\"\n"
         "\"Content-Transfer-Encoding: 8bit\\n\"\n".
@@ -204,6 +205,8 @@ mk_header(true  = _UseOrigHeader, _LC) ->
 %%%      removed before the first erlang/yaws file is processed.
 %%%      (entrys are appended to the file)
 %%% --------------------------------------------------------------------
+
+%% FIXME: Gettext_App_Name comes from GETTEXT_TMP_NAME - this is broken!
 parse_transform(Form,Opts) ->
     case lists:member(gettext, Opts) of
 	true ->
