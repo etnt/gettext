@@ -18,6 +18,7 @@
 %% OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 %% USE OR OTHER DEALINGS IN THE SOFTWARE.
 %%
+%% @private
 %% @copyright 2003 Torbjörn Törnkvist
 %% @author Torbjörn Törnkvist <tobbe@tornkvist.org>
 %% @doc Application start/stop.

@@ -30,7 +30,7 @@ INCLUDES=gettext_internal.hrl
 # Targets
 #
 
-all: $(EBIN_FILES)
+all: $(EBIN_FILES) ../ebin/gettext.app
 
 debug:
 	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) -Ddebug"
@@ -41,9 +41,12 @@ docs: ../doc/index.html
 	erl -noshell -run edoc_run application "gettext" '".."' '[]'
 
 clean:
-	rm -f $(EBIN_FILES) ../doc/*.html ../doc/edoc-info \
-	  ../doc/stylesheet.css ../doc/erlang.png
+	rm -f $(EBIN_FILES) ../ebin/gettext.app \
+	 ../doc/*.html ../doc/edoc-info \
+	 ../doc/stylesheet.css ../doc/erlang.png
 
 ../ebin/%.beam: %.erl $(INCLUDES) Makefile
 	erlc -o ../ebin $(ERLC_FLAGS) $<
 
+../ebin/gettext.app: gettext.app.src
+	cp gettext.app.src ../ebin/gettext.app

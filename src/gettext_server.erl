@@ -54,7 +54,6 @@
 
 
 -record(state, {
-	  cbmod,             % callback module for initialization
 	  cache = [],        % list_of( #cache{} )
           def_lang,          % default language
 	  gettext_dir,       % Dir where all the data are stored
@@ -122,14 +121,16 @@ start(CallBackMod, Name) ->
 %%--------------------------------------------------------------------
 init([CallBackModConfig, Name]) ->
 	{CallBackMod0, Config} = CallBackModConfig,
-    CallBackMod = get_callback_mod(CallBackMod0),
+    CallBackMod = case os:getenv(?ENV_CBMOD) of
+                      false -> CallBackMod0;
+                      CbMod -> list_to_atom(CbMod)
+                  end,
     GettextDir = get_gettext_dir(CallBackMod, Config),
     DefLang = get_default_lang(CallBackMod, Config),
     TableNameStr = atom_to_list(Name) ++ "_db",
     TableName = list_to_atom(TableNameStr),
     Cache = create_db(TableName, GettextDir),
-    {ok, #state{cache       = Cache, 
-		cbmod       = CallBackMod,
+    {ok, #state{cache       = Cache,
 		gettext_dir = GettextDir,
 		def_lang    = DefLang,
 		table_name  = TableName
@@ -236,12 +237,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-
-get_callback_mod(CallBackMod0) ->
-    case os:getenv(?ENV_CBMOD) of
-	false -> CallBackMod0;
-	CbMod -> list_to_atom(CbMod)
-    end.
 
 get_gettext_dir(CallBackMod, Config) ->
 	case proplists:get_value(gettext_dir, Config) of
