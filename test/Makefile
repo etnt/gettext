@@ -20,7 +20,7 @@ $(dir)/lang/default/$(def_lang)/gettext.pot: $(EBIN_FILES)
 	(export GETTEXT_TMP_NAME=$(tmp_name); \
 	 export GETTEXT_DIR=$(dir); \
 	 export GETTEXT_DEF_LANG=$(def_lang); \
-	 erl -noshell -pa ../gettext/ebin -s gettext_compile epot2po)
+	 erl -noshell -pa ../ebin -s gettext_compile epot2po)
 	install -D $(dir)/lang/$(tmp_name)/$(def_lang)/gettext.po \
 	  $(dir)/lang/default/$(def_lang)/gettext.pot; \
 
