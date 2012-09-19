@@ -27,6 +27,7 @@
 
 -export([parse_transform/2, epot2po/0]).
 -export([write_pretty/2]).
+-export([get_env/1]).
 
 -include("gettext_internal.hrl").
 
@@ -197,11 +198,9 @@ mk_header(true  = _UseOrigHeader, _LC) ->
 %%% --------------------------------------------------------------------
 %%% NB: We assume that the surrounding code does some preparations:
 %%%
-%%%   1. Setup the environment variables: 'GETTEXT_DIR' and 'GETTEXT_TMP_NAME'
-%%%   
-%%%   2. The compiler is called with the 'gettext' flag.
+%%%   1. The compiler is called with the 'gettext' flag.
 %%%
-%%%   3. The file $(GETTEXT_DIR)/lang/$(GETTEXT_TMP_NAME)/epot.dets is 
+%%%   2. The file priv/lang/epot.dets is 
 %%%      removed before the first erlang/yaws file is processed.
 %%%      (entrys are appended to the file)
 %%% --------------------------------------------------------------------
@@ -221,10 +220,20 @@ parse_transform(Form,Opts) ->
 	    Form
     end.
 
+get_env(Key) ->
+    case application:get_env(gettext, Key) of
+        undefined -> 
+            case Key of
+                path -> ".";
+                lang -> ?DEFAULT_LANG;
+                name -> "tmp"
+            end;
+        {ok, Value} -> 
+            Value
+    end.
+
 get_env() ->
-    {os:getenv(?ENV_TMP_NAME),
-     os:getenv(?ENV_ROOT_DIR),
-     os:getenv(?ENV_DEF_LANG)}.
+    {get_env(name), get_env(path), get_env(lang)}.
 
 
 pt(Form, Opts) ->
