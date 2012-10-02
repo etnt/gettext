@@ -245,8 +245,8 @@ get_gettext_dir(CallBackMod, Config) ->
 	end.
 
 get_gettext_dir(CallBackMod) ->
-    case os:getenv(?ENV_ROOT_DIR) of
-	false ->
+    case gettext_compile:get_env(path) of
+	undefined ->
 	    try CallBackMod:gettext_dir()
 	    catch
 		_:_ -> gettext_dir() % fallback
@@ -261,8 +261,8 @@ get_default_lang(CallBackMod, Config) ->
 	end.
 
 get_default_lang(CallBackMod) ->
-    case os:getenv(?ENV_DEF_LANG) of
-	false ->
+    case gettext_compile:get_env(lang) of
+	undefined ->
 	    case catch CallBackMod:gettext_def_lang() of
 		Dir when is_list(Dir) -> Dir;
 		_ -> gettext_def_lang() % fallback

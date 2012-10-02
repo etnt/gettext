@@ -17,10 +17,7 @@ po: $(dir)/lang/default/$(def_lang)/gettext.po
 pot: $(dir)/lang/default/$(def_lang)/gettext.pot
 
 $(dir)/lang/default/$(def_lang)/gettext.pot: $(EBIN_FILES)
-	(export GETTEXT_TMP_NAME=$(tmp_name); \
-	 export GETTEXT_DIR=$(dir); \
-	 export GETTEXT_DEF_LANG=$(def_lang); \
-	 erl -noshell -pa ../ebin -s gettext_compile epot2po)
+	erl -noshell -pa ../ebin -s gettext_compile epot2po
 	install -D $(dir)/lang/$(tmp_name)/$(def_lang)/gettext.po \
 	  $(dir)/lang/default/$(def_lang)/gettext.pot; \
 
@@ -31,10 +28,7 @@ clean:
 	rm -f $(EBIN_FILES)
 
 ../ebin/%.beam: %.erl $(INCLUDES) Makefile
-	(export GETTEXT_TMP_NAME=$(tmp_name); \
-	 export GETTEXT_DIR=$(dir); \
-	 export GETTEXT_DEF_LANG=$(def_lang); \
-	 erlc -pa ../ebin -o ../ebin $(ERLC_FLAGS) +gettext $<)
+	erlc -pa ../ebin -o ../ebin $(ERLC_FLAGS) +gettext $<
 
 test:
 	@erl -pa ../ebin -noshell \
