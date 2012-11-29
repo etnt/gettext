@@ -88,7 +88,7 @@ gettext_def_lang() ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    start_link(?MODULE).
+    start_link({?MODULE, application:get_all_env()}).
 
 start_link(CallBackMod) ->
     start_link(CallBackMod, ?SERVER).
