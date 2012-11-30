@@ -88,24 +88,30 @@ gettext_def_lang() ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    start_link({?MODULE, application:get_all_env()}).
+    start_link({?MODULE, application:get_all_env()}, ?SERVER).
 
-start_link(CallBackMod) ->
-    start_link(CallBackMod, ?SERVER).
+start_link(CallBackMod) when is_atom(CallBackMod) ->
+    start_link({CallBackMod, application:get_all_env()}, ?SERVER);
 
-start_link(CallBackMod, Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [CallBackMod, Name],[]).
+start_link(Config) when is_list(Config) ->
+    start_link({?MODULE, Config}, ?SERVER).
+
+start_link({CallBackMod, Config}, Name) ->
+    gen_server:start_link({local, Name}, ?MODULE, [{CallBackMod, Config}, Name], []).
 
 %%--------------------------------------------------------------------
 
 start() ->
-    start({?MODULE, application:get_all_env()}).
+    start({?MODULE, application:get_all_env()}, ?SERVER).
 
-start(CallBackMod) ->
-    start(CallBackMod, ?SERVER).
+start(CallBackMod) when is_atom(CallBackMod) ->
+    start({CallBackMod, application:get_all_env()}, ?SERVER);
 
-start(CallBackMod, Name) ->
-    gen_server:start({local, Name}, ?MODULE, [CallBackMod, Name], []).
+start(Config) when is_list(Config) ->
+    start({?MODULE, Config}, ?SERVER).
+
+start({CallBackMod, Config}, Name) ->
+    gen_server:start({local, Name}, ?MODULE, [{CallBackMod, Config}, Name], []).
 
 %%====================================================================
 %% Server functions
