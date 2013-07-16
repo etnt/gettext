@@ -246,12 +246,12 @@ get_gettext_dir(CallBackMod, Config) ->
 
 get_gettext_dir(CallBackMod) ->
     case gettext_compile:get_env(path) of
-	undefined ->
-	    try CallBackMod:gettext_dir()
-	    catch
-		_:_ -> gettext_dir() % fallback
-	    end;
-	Dir -> Dir
+      "." ->
+        try CallBackMod:gettext_dir()
+        catch
+        _:_ -> "." % fallback
+        end;
+      Dir -> Dir
     end.
 
 get_default_lang(CallBackMod, Config) ->
@@ -262,12 +262,12 @@ get_default_lang(CallBackMod, Config) ->
 
 get_default_lang(CallBackMod) ->
     case gettext_compile:get_env(lang) of
-	undefined ->
-	    case catch CallBackMod:gettext_def_lang() of
-		Dir when is_list(Dir) -> Dir;
-		_ -> gettext_def_lang() % fallback
-	    end;
-	DefLang -> DefLang
+      ?DEFAULT_LANG ->
+        case catch CallBackMod:gettext_def_lang() of
+          Dir when is_list(Dir) -> Dir;
+          _ -> ?DEFAULT_LANG % fallback
+        end;
+      DefLang -> DefLang
     end.
 
 db_filename(TableName, GettextDir) ->
