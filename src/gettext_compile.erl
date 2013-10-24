@@ -328,7 +328,8 @@ get_epot_data() ->
     dets:foldl(fun(E, Acc) -> [E|Acc] end, [], ?EPOT_TABLE).
 
 mk_epot_fname(Gettext_App_Name, GtxtDir) ->
-    GtxtDir ++ "/lang/" ++ Gettext_App_Name ++ "/epot.dets".
+    filename:join([GtxtDir, ?LANG_DIR, Gettext_App_Name,
+                   ?EPOT_TABLE, ".dets"]).
 
 open_po_file(Gettext_App_Name, GtxtDir, DefLang) ->
     DefDir = filename:join([GtxtDir, ?LANG_DIR, Gettext_App_Name, DefLang]),
