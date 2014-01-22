@@ -195,8 +195,11 @@ handle_call({change_gettext_dir, Dir}, _From, State) ->
     {reply, ok, State#state{gettext_dir = Dir, cache = Cache}};
 %%
 handle_call(default_lang, _From, State) ->
-    {reply, State#state.def_lang, State}.
+    {reply, State#state.def_lang, State};
 
+%%
+handle_call(stop, _, State) ->
+    {stop, normal, stopped, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast/2
