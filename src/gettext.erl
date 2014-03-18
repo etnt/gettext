@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -25,8 +26,8 @@
 -module(gettext).
 
 -export([parse_po/1, lc2lang/1,
-	 parse_po_bin/1, all_lang/0, 
-	 key2str/1, key2str/2, key2str/3, 
+	 parse_po_bin/1, all_lang/0,
+	 key2str/1, key2str/2, key2str/3,
 	 all_lcs/0, all_lcs/1,
 	 reload_custom_lang/1, reload_custom_lang/2,
 	 unload_custom_lang/1, unload_custom_lang/2,
@@ -34,14 +35,14 @@
 	 gettext_dir/0, gettext_dir/1,
 	 change_gettext_dir/1, change_gettext_dir/2,
 	 default_lang/0, default_lang/1,
-	 store_pofile/2, store_pofile/3, 
+	 store_pofile/2, store_pofile/3,
 	 lang2cset/1, lang2cset/2]).
 
 -export([get_app_key/2
          , mk_polish_style_header/1
          , fixed_last_translator/0
          , fixed_revision_date/0
-         , create_date/0 
+         , create_date/0
          , charset/0
          , team/0
          , org_name/0
@@ -62,21 +63,21 @@
 %%% put the language to be used in the process dictionary.
 
 %% @doc Get the translation string for a key using the current language.
-%% 
+%%
 %% This is usually not called directly, but via the `?TXT(Key)' macro.
 
-key2str(Key) -> 
+key2str(Key) ->
     key2str(Key, get(gettext_language)).
 
 %% @doc Get the translation string for a key and a specific language
 %% and/or using a named gettext server. If no server is specified, the
 %% default server is used. If no language is specified, the current
 %% language is used.
-%% 
+%%
 %% This is usually not called directly, but via the `?TXT2(Key,Lang)'
 %% macro.
 
-key2str(Key, Lang) when is_list(Key) -> 
+key2str(Key, Lang) when is_list(Key) ->
     key2str(?DEFAULT_SERVER, Key, Lang);
 key2str(Server, Key) when is_atom(Server) ->
     key2str(Server, Key, get(gettext_language)).
@@ -84,7 +85,7 @@ key2str(Server, Key) when is_atom(Server) ->
 %% @doc Get the translation string for a key and a specific language
 %% using the named gettext server.
 
-key2str(_Server, Key, "a") -> 
+key2str(_Server, Key, "a") ->
     a_language(Key);
 key2str(Server, Key, Lang) ->
     gen_server:call(Server, {key2str, Key, Lang}, infinity).
@@ -122,8 +123,8 @@ all_lcs(Server) ->
 %% @doc Recreates the database file from scratch.
 
 recreate_db() ->
-    recreate_db(?DEFAULT_SERVER). 
-   
+    recreate_db(?DEFAULT_SERVER).
+
 recreate_db(Server) ->
     gen_server:call(Server, recreate_db, infinity).
 
@@ -226,7 +227,7 @@ get_po_string([$\t|T]) -> get_po_string(T);
 get_po_string([$"|T])  -> header_info(eat_string(T)).       %"make emacs happy
 
 %%% only header-info has empty po-string !
-header_info({"",R}) -> {?GETTEXT_HEADER_INFO, R};  
+header_info({"",R}) -> {?GETTEXT_HEADER_INFO, R};
 header_info(X)      -> X.
 
 eat_string(S) ->
@@ -256,31 +257,31 @@ to_list(L) when is_list(L)    -> L.
 %%% Language Codes
 %%% --------------------------------------------------------------------
 
-lc2lang(LC) -> 
+lc2lang(LC) ->
     case gettext_iso639:lc3lang(LC) of
 	""   -> gettext_iso639:lc2lang(LC);  % backward compatible
 	Lang -> Lang
     end.
-    
+
 
 all_lang() -> gettext_iso639:all3lang().
 
 
 %%% -------------------------------------------------------------------
-%%% Function name: 
+%%% Function name:
 %%% a_language
 %%% Function purpose:
 %%% A special function to convert all strings in a po-file to a's Used
 %%% to check what text has been textified and what hasn't been
 %%% textified. Also converts numbers to b's instead.  The intended
 %%% language ISO to be used is ISO/IEC 8859-1 (Latin-1)
-%%% The check in the last clause: the intervals 
+%%% The check in the last clause: the intervals
 %%% 1. Hd > 64 andalso Hd < 91   = Uppercase Alpha numerical characters
 %%% 2. Hd > 96 andalso Hd < 123  = Lowercase Alpha numerical characters
 %%% 3. Hd > 191 andalso Hd < 256 = Special language characters (Ex. ï)
 %%% 3. Hd > 47 andalso Hd < 58   = Numbers
-%%% sees to that only Alphanumerical characters is replaced, to keep 
-%%% special characters, so that the context will remain to a higher 
+%%% sees to that only Alphanumerical characters is replaced, to keep
+%%% special characters, so that the context will remain to a higher
 %%% degree.
 %%% -------------------------------------------------------------------
 a_language(Key) ->
@@ -294,7 +295,7 @@ a_language([$<|_Tl] = Key, Acc) ->
 a_language([$\s = Hd |Tl], Acc) ->
     a_language(Tl, [Hd|Acc]);
 a_language([$~ = Hd |Tl], Acc) ->
-    [Hd2|Tl2] = Tl, 
+    [Hd2|Tl2] = Tl,
     a_language(Tl2, [Hd2, Hd |Acc]);
 a_language([$$|Tl], Acc) ->
     {RestKey, DollarFormat} = search_for(Tl, [], $$),
@@ -302,7 +303,7 @@ a_language([$$|Tl], Acc) ->
 a_language([Hd|Tl], Acc) ->
     Char = if
 	    (Hd > 64 andalso Hd < 91) orelse  % See function spec above (1.)
-	    (Hd > 96 andalso Hd < 123) orelse % See function spec above (2.) 
+	    (Hd > 96 andalso Hd < 123) orelse % See function spec above (2.)
 	    (Hd > 191 andalso Hd < 256) ->    % See function spec above (3.)
 		$a;
 	    Hd > 47 andalso Hd < 58 ->
@@ -313,11 +314,11 @@ a_language([Hd|Tl], Acc) ->
     a_language(Tl, [Char |Acc]).
 
 %%% -------------------------------------------------------------------
-%%% Function name: 
+%%% Function name:
 %%% search_for
 %%% Function purpose:
-%%% A function, used as a help-function to a_language. It's mostly 
-%%% to be used to look for html so that links and html formatting 
+%%% A function, used as a help-function to a_language. It's mostly
+%%% to be used to look for html so that links and html formatting
 %%% doesn't break when trying to converting strings to a's. The html are
 %%% detected by matching for < and > and passes that text-chunk on to
 %%% a_language and then a_language does it's magic and continues
@@ -359,16 +360,16 @@ create_date() ->
 
 charset() ->
     get_app_key(charset, "iso-8859-1").
-    
+
 team() ->
     get_app_key(team, "Team <info@team.com>").
-    
+
 org_name() ->
     get_app_key(team, "Organization").
-    
+
 copyright() ->
     get_app_key(copyright, "YYYY Organization").
-    
+
 callback_mod() ->
     get_app_key(callback_mod, gettext_server).
 
@@ -386,7 +387,7 @@ mk_polish_style_header(LC) ->
       charset()
      ).
 
-mk_polish_style_header(Header, CopyRight, CreateDate, RevDate, 
+mk_polish_style_header(Header, CopyRight, CreateDate, RevDate,
                        LastTranslator, Team, Charset) ->
     "# "++Header++"\n"
         "# Copyright (C) "++CopyRight++"\n"

@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -36,25 +37,25 @@ ignore_entry_type() ->
 
 heading() ->
     "BAD ?STXT format strings".
-    
+
 
 %% ----------------------------------------------------------------------------
-check({OriginalFormatStr, TranslatedFormatStr}, 
-		  Ignores, Acc) -> 
-    %% XXX $ in non-STXT format strings isn't handle this may result 
-    %%     in crashes !!! 
+check({OriginalFormatStr, TranslatedFormatStr},
+		  Ignores, Acc) ->
+    %% XXX $ in non-STXT format strings isn't handle this may result
+    %%     in crashes !!!
 
     %% check strings only
     ThrowMsg = {formatter_crashed,
 		OriginalFormatStr, TranslatedFormatStr},
-    Vars1 = 
-	try 
+    Vars1 =
+	try
 	    gettext_format:get_vars_in_format_str(OriginalFormatStr)
 	catch _:_ ->
 		throw(ThrowMsg)
 	end,
-    Vars2 = 
-	try 
+    Vars2 =
+	try
 	    gettext_format:get_vars_in_format_str(TranslatedFormatStr)
 	catch _:_ ->
 		throw(ThrowMsg)
@@ -64,21 +65,21 @@ check({OriginalFormatStr, TranslatedFormatStr},
     OkButSuspect = subtract(Vars1, Vars2),
     %% translation contains unkown $...$
     BadVars      = subtract(Vars2, Vars1),
-    
+
     case {length(InterSect), length(OkButSuspect), length(BadVars)} of
 	{_,Suspect,Bad} when (Bad > 0) and (Suspect > 0) ->
 	    gettext_validate:do_ignore(
 	      Ignores,
 	      {bad_stxt, OriginalFormatStr, TranslatedFormatStr},
-	      {'ERROR', 
+	      {'ERROR',
 	       "Translation contains unknown var(s) "
 	       "as well as unused var(s) (not using var(s) from msgid "
 	       "may be ok).",
 	       {bad_vars,         BadVars},
 	       {unused_vars,      OkButSuspect},
-	       {original,         OriginalFormatStr}, 
-	       {translation,      TranslatedFormatStr}, 
-	       {original_vars,    Vars1}, 
+	       {original,         OriginalFormatStr},
+	       {translation,      TranslatedFormatStr},
+	       {original_vars,    Vars1},
 	       {translation_vars, Vars2}},
 	      Acc);
 	{_,_,Bad} when Bad > 0 ->
@@ -88,9 +89,9 @@ check({OriginalFormatStr, TranslatedFormatStr},
 	      {'ERROR',
 	       "Translation contains unknown var(s).",
 	       {bad_vars,         BadVars},
-	       {original,         OriginalFormatStr}, 
-	       {translation,      TranslatedFormatStr}, 
-	       {original_vars,    Vars1}, 
+	       {original,         OriginalFormatStr},
+	       {translation,      TranslatedFormatStr},
+	       {original_vars,    Vars1},
 	       {translation_vars, Vars2}},
 	      Acc);
 	{_,Suspect,_} when Suspect > 0 ->
@@ -101,9 +102,9 @@ check({OriginalFormatStr, TranslatedFormatStr},
 	       "Translation dosen't use some var(s) this is ok but may "
 	       "indicate a error.",
 	       {unused_vars,      OkButSuspect},
-	       {original,         OriginalFormatStr}, 
-	       {translation,      TranslatedFormatStr}, 
-	       {original_vars,    Vars1}, 
+	       {original,         OriginalFormatStr},
+	       {translation,      TranslatedFormatStr},
+	       {original_vars,    Vars1},
 	       {translation_vars, Vars2}},
 	      Acc);
 	{Ok,_,_} when Ok == length(Vars1)  ->
@@ -121,7 +122,7 @@ subtract(L1,L2) ->
     Set2 = sets:from_list(L2),
     RemSet = sets:subtract(Set1, Set2),
     sets:to_list(RemSet).
-    
+
 %%-----------------------------------------------------------------------------
 %% Function: intersection(L1,L2)
 %%           L1, L2 = list() of term()

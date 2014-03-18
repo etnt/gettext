@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -50,25 +51,25 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
     TailMatch  = ws_match(ORev, TRev),
 
     Acc2 = case TailMatch of
-	       false -> 
+	       false ->
 		   gettext_validate:do_ignore(
-		     Ignores, 
+		     Ignores,
 		     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
 		     {'ERROR',
 		      "Whitespaces differ at string tail.",
-		      {original,    OriginalFormatStr}, 
-		      {translation, TranslatedFormatStr}}, 
+		      {original,    OriginalFormatStr},
+		      {translation, TranslatedFormatStr}},
 		     Acc);
 	       true -> Acc
     end,
     Acc3 = case FrontMatch of
-	       false -> 
+	       false ->
 		   gettext_validate:do_ignore(
 		     Ignores,
 		     {bad_ws, OriginalFormatStr, TranslatedFormatStr},
 		     {'ERROR',
 		      "Whitespaces differ at string front.",
-		      {original,    OriginalFormatStr}, 
+		      {original,    OriginalFormatStr},
 		      {translation, TranslatedFormatStr}},
 		     Acc2);
 	       true -> Acc2
@@ -77,13 +78,13 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 
 
 %% ----------------------------------------------------------------------------
-%% return: {L1, L2} | 
+%% return: {L1, L2} |
 %%         ws_mismatch (when initial whitespace differ)
 text_with_no_ws_front([],[]) -> {[],[]};
 text_with_no_ws_front([], _) -> ws_mismatch; % different no. of whitespaces
 text_with_no_ws_front(_ ,[]) -> ws_mismatch; % different no. of whitespaces
 text_with_no_ws_front([C1|R1] = L1, [C2|R2] = L2) ->
-    W1 = is_ws(C1), 
+    W1 = is_ws(C1),
     W2 = is_ws(C2),
     case {C1, C2, W1, W2} of
 	{C, C, true,  true}  -> text_with_no_ws_front(R1,R2);
@@ -93,7 +94,7 @@ text_with_no_ws_front([C1|R1] = L1, [C2|R2] = L2) ->
     end.
 
 %% do whitespaces match - bool()
-ws_match(R1,R2) -> 
+ws_match(R1,R2) ->
     case text_with_no_ws_front(R1,R2) of
 	{_,_}        -> true;
 	ws_mismatch -> false
@@ -102,5 +103,3 @@ ws_match(R1,R2) ->
 %%  is whitespace (control char or space/nbsp/NL/CR/...)
 is_ws(C) when (C =< 32) orelse ((C >= 127) andalso (C =< 160)) -> true;
 is_ws(_) -> false.
-
-
