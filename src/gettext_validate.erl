@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -44,7 +45,7 @@
 %% Returns a short text used as heading when listing errors/warnings for
 %% this checker.
 %%
-%% ```check({OriginalFormatStr::string(), TranslatedFormatStr::string()}, 
+%% ```check({OriginalFormatStr::string(), TranslatedFormatStr::string()},
 %%          Ignores, Acc::[acc()]) -> UpdatedAcc::[acc()]'''
 %% Returns an updated accumulator `UpdatedAcc' after checking
 %% `OriginalFormatStr' against `TranslatedFormatStr'. One or more entries
@@ -55,8 +56,8 @@
 %% broken - ignore files could otherwise hide broken checks.
 %%
 %% Each acc() must be of the format:
-%%```{alert_level(), 
-%%    ErrorMsg::string(), 
+%%```{alert_level(),
+%%    ErrorMsg::string(),
 %%    Pairs::{Name::atom(), Info::term()} ....}'''
 %% where `alert_level()' is either `` 'ERROR' '', indicating an error that
 %% may cause a crash (e.g., in STXT) or generate invalid output, or ``
@@ -68,7 +69,7 @@
 
 
 %% @type output() = [{{heading,          string()},
-%%                    {ignore_type,      atom()}, 
+%%                    {ignore_type,      atom()},
 %%		      {po_file_path,     string()},
 %%		      {ignore_file_path, string()},
 %% 		      CheckRes::[acc()]
@@ -94,7 +95,7 @@
 	  %% this may be useful when defining your own opts, e.g. when adding
 	  %% new checks
 	  default_opts/0
-	 ]).  
+	 ]).
 
 
 %%=============================================================================
@@ -108,7 +109,7 @@
 validate_q(PoFilePath) ->
     validate(PoFilePath, "", default_opts()).
 
-%% no opts 
+%% no opts
 validate_q(PoFilePath, IgnoreFilePath) ->
     validate(PoFilePath, IgnoreFilePath, default_opts()).
 
@@ -119,27 +120,27 @@ validate_q(PoFilePath, IgnoreFilePath) ->
 validate_qf(PoFilePath, SaveFile) ->
     validate(PoFilePath, "", default_opts() ++ [{to_file, SaveFile}]).
 
-%% no opts 
+%% no opts
 validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
-    validate(PoFilePath, IgnoreFilePath, 
+    validate(PoFilePath, IgnoreFilePath,
 	     default_opts() ++ [{to_file, SaveFile}]).
 
 
 %% ----------------------------------------------------------------------------
 %% @spec validate(PoFilePath::string(), IgnoreFilePath::[]|string(),
 %%                Opts::[{Key, Val}]) -> ok | output()
-%% @doc  Takes a valid (parsable) po file and checks that there are no 
+%% @doc  Takes a valid (parsable) po file and checks that there are no
 %%       inconsistencies between the msgid and msgstr texts.
-%% 
+%%
 %%       The function prints a result listing.
-%% 
+%%
 %%       `PoFilePath'     - the po file check
 %%
-%%       `IgnoreFilePath' - a optional file that can be used to specify 
+%%       `IgnoreFilePath' - a optional file that can be used to specify
 %%                          {CheckType, MsgId, MsgStr} combinations that should
-%%                          not be reported as a errors/warnings - false 
+%%                          not be reported as a errors/warnings - false
 %%                          positives.
-%%                          Each (language) po file should usualy have one such 
+%%                          Each (language) po file should usualy have one such
 %%                          ignore file.
 %%
 %%       `Opts:'
@@ -153,23 +154,23 @@ validate_qf(PoFilePath, IgnoreFilePath, SaveFile) ->
 %%'''
 %% @end------------------------------------------------------------------------
 validate(PoFilePath, IgnoreFilePath, Opts) ->
-    Terms = 
+    Terms =
 	case IgnoreFilePath of
 	    "" -> [];
 	    _  -> case file:consult(IgnoreFilePath) of
 		      {ok, Terms0}     -> Terms0;
-		      {error, Reason0} -> 
+		      {error, Reason0} ->
 			  throw({no_ignore_file_or_malformed_file, Reason0})
 		  end
 	end,
     Ignores = ets:new(dummy, [set,private,{keypos,1}]),
 
     %% catch exceptions so that ets table is always cleaned up
-    Res = 
+    Res =
 	try
 	    %% fill ets table with ignore data for fast lookup
 	    lists:foreach(
-	      fun(E) -> 
+	      fun(E) ->
 		      case is_valid_ignore_entry(E) of
 			  true  -> ets:insert(Ignores, {E});
 			  false -> throw({invalid_ignore_file_entry, E})
@@ -177,14 +178,14 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 	      end, Terms),
 
 	    %% get file and discard non-text meta data header
-	    [{header_info, _} | Trans] = 
+	    [{header_info, _} | Trans] =
 	    try gettext:parse_po(PoFilePath)
 	    catch _:_ -> throw(po_file_not_found_or_parsing_failed)
 	    end,
 
 	    %% assert that there are no msgid duplicates
 	    throw_on_duplicates(Trans),
-	    
+
 	    Callbacks = look_up(checkers, Opts),
 	    CheckResults = run_checks(Ignores, Trans, Callbacks),
 	    EndUser = case look_up(end_user, Opts) of
@@ -193,7 +194,7 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 		      end,
 	    case EndUser of
 		human ->
-		    ResultText = format_results(PoFilePath, CheckResults, 
+		    ResultText = format_results(PoFilePath, CheckResults,
 						Callbacks),
 		    case look_up(to_file, Opts) of
 			[] ->
@@ -204,15 +205,15 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
 		    ok;
 		computer ->
 		    [{{heading, Checker:heading()},
-		      {ignore_type, Checker:ignore_entry_type()}, 
+		      {ignore_type, Checker:ignore_entry_type()},
 		      {po_file_path, PoFilePath},
 		      {ignore_file_path, IgnoreFilePath},
-		      CheckRes} 
-		     || {CheckRes, Checker} 
+		      CheckRes}
+		     || {CheckRes, Checker}
 			    <- lists:zip(CheckResults, Callbacks)]
 	    end
-	
-	catch _:Reason2 -> 
+
+	catch _:Reason2 ->
 		throw({validator_crashed, Reason2})
 	after
 	    %% all checks done - discard ignore table
@@ -221,7 +222,7 @@ validate(PoFilePath, IgnoreFilePath, Opts) ->
     Res.
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- 
+
 throw_on_duplicates(MsgidMsgStrL) ->
     F = fun({MsgId1, _}, {MsgId2, _}) -> MsgId1 < MsgId2 end,
     SortedPairs = lists:sort(F, MsgidMsgStrL),
@@ -229,7 +230,7 @@ throw_on_duplicates(MsgidMsgStrL) ->
 	[] -> MsgidMsgStrL;
 	Dups -> throw({po_file_contained_duplicates, Dups})
     end.
-	     
+
 
 scan_for_duplicate(SortedPairs) ->
     DupL = scan_for_duplicate(SortedPairs, []),
@@ -244,26 +245,26 @@ scan_for_duplicate([], Acc) ->
     Acc.
 
 
-%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-%% Check that ignore file looks usable - we don't check the ignore type to 
-%% allow for ignore files used with other sets of checker callback modules 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+%% Check that ignore file looks usable - we don't check the ignore type to
+%% allow for ignore files used with other sets of checker callback modules
 %% is_list/1 = is_string/1 check
 %% get IgnoreTypes from ignore_types/1
 is_valid_ignore_entry(E) ->
     case E of
-	{Type, MsgId, MsgStr} when is_atom(Type), 
+	{Type, MsgId, MsgStr} when is_atom(Type),
 				   is_list(MsgId), is_list(MsgStr) ->
 	    true;
 	_ ->
 	    false
     end.
 
-%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 write_to_file(ResultText, SaveLocation) ->
     ok = file:write_file(SaveLocation, ResultText).
 
 %% return: Val | not_found
-look_up(Key, Opts) -> 
+look_up(Key, Opts) ->
     case lists:keysearch(Key, 1, Opts) of
 	{value, {Key, Val}} -> Val;
 	false -> []
@@ -279,30 +280,30 @@ default_opts() ->
     ].
 
 
-%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+%% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 run_checks(Ignores, Trans, Callbacks) ->
     %% Each check runs independetly of all others - no data is retained between
     %% them this makes it easy to add more tests without breaking stuff.
 
     %% get one entry (of [bad()]) for each check
-    [lists:foldl(fun(TxtPair, Acc) -> 
+    [lists:foldl(fun(TxtPair, Acc) ->
 			 Callback:check(TxtPair, Ignores, Acc)
 		 end, [], Trans) || Callback <- Callbacks].
 
 
 %% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%% return: io_list() 
-format_results(PoFilePath, BadL, Callbacks) 
+%% return: io_list()
+format_results(PoFilePath, BadL, Callbacks)
   when length(BadL) == length(Callbacks) ->
     BadEntries = lists:flatten(BadL),
-    
+
     [
      io_lib:format("=======================================================\n"
 		   " Checking: ~s\n"
 		   " Total - ~s\n"
-		   "=======================================================\n", 
+		   "=======================================================\n",
 		   [PoFilePath, format_count(BadEntries)])
-    ] ++ 
+    ] ++
 
 	[
 	 io_lib:format(
@@ -310,7 +311,7 @@ format_results(PoFilePath, BadL, Callbacks)
 	   "~s (~s) \n"
 	   "ignore type: ~p (use this in the ignore file)\n"
 	   "-------------------------------------------------------\n"
-	   "~p\n", [Callback:heading(), format_count(Bad), 
+	   "~p\n", [Callback:heading(), format_count(Bad),
 		    Callback:ignore_entry_type(),
 		    Bad]) ||
 	    {Callback, Bad} <- lists:zip(Callbacks, BadL)].
@@ -330,7 +331,7 @@ count(BadEntries) ->
 		end
 	end,
     lists:foldl(F, {0,0}, BadEntries).
-		
+
 
 %% ----------------------------------------------------------------------------
 %% return: bool()
@@ -340,7 +341,7 @@ is_ignore(Tab, {_Type, _OrgText, _TransText} = Key) ->
 	[{Key}] -> true;
 	[] -> false
     end.
-	     
+
 %% update Acc with Bad only if Key not in Ignores
 %%
 %% Ignores - the ets table to check for Key

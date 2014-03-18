@@ -1,13 +1,14 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Copyright (c) 2003, Johan Bevemyr. All rights reserved.
-%% 
+%%
 %% Redistribution and use in source and binary forms, with or without
 %% modification, are permitted provided that the following conditions are
 %% met:
-%%     * Redistributions of source code must retain the above copyright 
+%%     * Redistributions of source code must retain the above copyright
 %%       notice, this list of conditions and the following disclaimer.
-%%     * Redistributions in binary form must reproduce the above copyright 
-%%       notice, this list of conditions and the following disclaimer in the 
+%%     * Redistributions in binary form must reproduce the above copyright
+%%       notice, this list of conditions and the following disclaimer in the
 %%       documentation and/or other materials provided with the distribution.
 %%     * Neither the name of "Yaws" nor the names of its contributors may be
 %%       used to endorse or promote products derived from this software
@@ -59,7 +60,7 @@ parse([], {T,A,_L}, [], Acc) ->
     {T, A, lists:reverse(Acc)};
 parse([], {T,A,_L}, [{CTag,CAcc}|Stack], Acc) ->
     %% gettext_validate_bad_html.erl doesn't care about this (broken html
-    %% is expected), suppress io:format(...) as they should only see the 
+    %% is expected), suppress io:format(...) as they should only see the
     %% validator output
     %% io:format("Unterminated tag '~p' at line ~p\n", [T,L]),
     parse([], CTag, Stack, [{T,A,lists:reverse(Acc)}|CAcc]);
@@ -100,9 +101,9 @@ parse([{data, Data, _Line}|Tokens], CTag, Stack, Acc) ->
     end.
 %
 
-tag_type(p)          -> leaf; 
-tag_type(hr)         -> leaf; 
-tag_type(input)      -> leaf; 
+tag_type(p)          -> leaf;
+tag_type(hr)         -> leaf;
+tag_type(input)      -> leaf;
 tag_type(base)       -> leaf;
 tag_type(img)        -> leaf;
 tag_type('!doctype') -> leaf;
@@ -122,7 +123,7 @@ tokenize([$<,$!,$-,$-|R0], Acc, Tokens, L0) ->
     tokenize(R1, Acc, Tokens, L1);
 tokenize([$<|R0], Acc, Tokens, L0) ->
     {Tag,R1,L1} = scan_tag(R0,L0),
-    if 
+    if
 	Acc == [] ->
 	    next_token(Tag, R1, [Tag|Tokens], L1);
 	true ->
@@ -233,7 +234,7 @@ scan_quote([C=$\r|R], Acc, Q, L) ->
     scan_quote(R, [C|Acc], Q, L+1);
 scan_quote([C|R], Acc, Q, L) ->
     scan_quote(R, [C|Acc], Q, L).
-	    
+
 %
 
 scan_endtag(R, Tag, L) ->

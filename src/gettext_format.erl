@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -30,30 +31,30 @@
 -export ([
 	  stxt/2,
 	  get_vars_in_format_str/1
-	 ]).  
+	 ]).
 
 %%=============================================================================
 %% External functions
 %%=============================================================================
 
 %% ----------------------------------------------------------------------------
-%% @spec stxt(FormatStr::string(), 
+%% @spec stxt(FormatStr::string(),
 %%            Args::[{Key::atom(),SubVal::string()}]) -> string()
 %% @doc  This function is similar to io_lib:format/2 but allows FormatStr to use
 %%       Args in any order, any number of times or not at all.
 %%       This is needed for translators of po files to be able to write
-%%       translations with a natural scentence structure. 
+%%       translations with a natural scentence structure.
 %%
-%%       FormatStr: can contain $arg_name$ markers where arg_name must be one 
-%%       of the Key entries in Args to substitute (when converted to a atom). 
+%%       FormatStr: can contain $arg_name$ markers where arg_name must be one
+%%       of the Key entries in Args to substitute (when converted to a atom).
 %%       Key can be any atom not containing $.
 %%
 %%       FormatStr is processed as shown below (premature FormatStr end states
 %%       and "missing char" edges aren't shown):
 %%
-%%```          $            !$             $           
+%%```          $            !$             $
 %%     ->(0) --------> (2) --------> (3) -------> (4)
-%%    | ^  \            \           ^  \           |  
+%%    | ^  \            \           ^  \           |
 %%    | \__/             \ $        \__/ !$        |
 %%    |     !$            v                        |
 %%    |                   (1)                      |
@@ -62,7 +63,7 @@
 %%    0  : start state
 %%    1  : quoted $ found
 %%    2/3: (start) accumulating tag name
-%%    4  : look up tag in Args  
+%%    4  : look up tag in Args
 %%'''
 %%      Note that Key/arg_name should be chosen to be helpfull to the translator
 %%      who will usually only have acess to FormatStr shown as the MsgId in the
@@ -70,8 +71,8 @@
 %% @end------------------------------------------------------------------------
 stxt(Str, Args) ->
     try stxt0(Str, Args)
-    catch throw:Reason -> throw({reason, Reason, 
-				 input_str, Str, 
+    catch throw:Reason -> throw({reason, Reason,
+				 input_str, Str,
 				 input_args, Args})
     end.
 
@@ -124,7 +125,7 @@ get_arg(Key, Args) ->
 %%       properly
 get_vars_in_format_str(FormatStr) ->
     try get_vars(FormatStr, [])
-    catch throw:Reason -> throw({reason, Reason, 
+    catch throw:Reason -> throw({reason, Reason,
 				 input_str, FormatStr})
     end.
 
@@ -154,6 +155,3 @@ get_vars3([C|R], Vars, Acc) ->
 %% unexpected end of FormatStr
 get_vars3([], _, _) ->
     throw("$...$ tag is missing ending $").
-
-
-

@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -39,21 +40,21 @@ heading() ->
 %% ----------------------------------------------------------------------------
 %% Note: these tests may need to be relaxed or map between different sets of
 %%       punctuation if unicode is supported or when languages with unusal
-%%       punctuation rules are used in the po file 
+%%       punctuation rules are used in the po file
 check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
     case gettext_validate_bad_ws:text_with_no_ws_front(
-	   lists:reverse(OriginalFormatStr), 
+	   lists:reverse(OriginalFormatStr),
 	   lists:reverse(TranslatedFormatStr)) of
 
 	%% look_for_bad_ws(...) will warn about whitespace mismatch
 	%% so assume that user will find any punctuation bugs on revalidation
-	ws_mismatch  -> Acc; 
+	ws_mismatch  -> Acc;
 
 	%% trailing white spaces are the same
 	{[], []} -> Acc;
-	{[], R2} -> bad_punct(R2, OriginalFormatStr, TranslatedFormatStr, 
+	{[], R2} -> bad_punct(R2, OriginalFormatStr, TranslatedFormatStr,
 			      Ignores, Acc);
-	{R1, []} -> bad_punct(R1, OriginalFormatStr, TranslatedFormatStr, 
+	{R1, []} -> bad_punct(R1, OriginalFormatStr, TranslatedFormatStr,
 			      Ignores, Acc);
 	{R1, R2} ->
 	    C1 = hd(R1),
@@ -71,27 +72,27 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 		false ->
 		    gettext_validate:do_ignore(
 		      Ignores,
-		      {bad_punctuation, OriginalFormatStr, 
+		      {bad_punctuation, OriginalFormatStr,
 		       TranslatedFormatStr},
 		      {'Warning',
 		       "Trailing punctuation is mismatched.",
-		       {original,    OriginalFormatStr}, 
+		       {original,    OriginalFormatStr},
 		       {translation, TranslatedFormatStr}},
 		      Acc)
 	    end
     end.
 
-%% helper function 
+%% helper function
 bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Ignores, Acc) ->
     P = is_punct(hd(R)),
     case P of
-	true -> 
+	true ->
 	    gettext_validate:do_ignore(
 	      Ignores,
 	      {bad_punctuation, OriginalFormatStr, TranslatedFormatStr},
 	      {'Warning',
 	       "Trailing punctuation is mismatched.",
-	       {original,    OriginalFormatStr}, 
+	       {original,    OriginalFormatStr},
 	       {translation, TranslatedFormatStr}},
 	      Acc);
 	false ->
@@ -101,7 +102,7 @@ bad_punct(R, OriginalFormatStr, TranslatedFormatStr, Ignores, Acc) ->
 
 %% return: bool()
 %% Determine if C is a end of scentence/text marker
-%% Note: using unicode will require adding new punctuation markers. 
+%% Note: using unicode will require adding new punctuation markers.
 %%       The set of punctuation markers is somewhat arbitrary, its main intent
 %%       is to catch plausible errors, at the end of texts that may be joined
 %%       with other texts.

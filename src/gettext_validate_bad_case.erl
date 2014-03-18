@@ -1,3 +1,4 @@
+%% -*- coding: latin-1 -*-
 %% -------------------------------------------------------------------------
 %% Permission is hereby granted, free of charge, to any person obtaining a
 %% copy of this software and associated documentation files (the
@@ -6,10 +7,10 @@
 %% distribute, sublicense, and/or sell copies of the Software, and to permit
 %% persons to whom the Software is furnished to do so, subject to the
 %% following conditions:
-%% 
+%%
 %% The above copyright notice and this permission notice shall be included
 %% in all copies or substantial portions of the Software.
-%% 
+%%
 %% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 %% OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 %% MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
@@ -45,7 +46,7 @@ heading() ->
 %%       (in case supporting languages) also note that translations will not
 %%       always start on the same word so they will sometime move a upper case
 %%       word into a (original text) lower case postion
-%%       
+%%
 
 check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
     %% only do case checks with non-empty strings
@@ -53,35 +54,35 @@ check({OriginalFormatStr, TranslatedFormatStr}, Ignores, Acc) ->
 	{"", ""} -> Acc;
 	{"",  _} -> Acc;
 	{_ , ""} -> Acc;
-	{_ ,  _} -> 
+	{_ ,  _} ->
 	    %% check if both strings start with the same case
 	    case case_changed(has_case(hd(OriginalFormatStr)),
 			      has_case(hd(TranslatedFormatStr))) of
 		false -> Acc;
-		true -> 
+		true ->
 		    gettext_validate:do_ignore(
 		      Ignores,
-		      {bad_case, OriginalFormatStr, 
+		      {bad_case, OriginalFormatStr,
 		       TranslatedFormatStr},
 		      {'Warning',
 		       "Text starts with different case.",
-		       {original,    OriginalFormatStr}, 
+		       {original,    OriginalFormatStr},
 		       {translation, TranslatedFormatStr}},
 		      Acc)
 	    end
     end.
 
 %% return true if case changed i.e. went from upper <-> lower, changing
-%% to/from case_less is not considerd to be a change. 
+%% to/from case_less is not considerd to be a change.
 case_changed(Case1, Case2) ->
     case {Case1, Case2} of
 	{upper, lower} -> true;
 	{lower, upper} -> true;
 	_ -> false
     end.
-	
 
-%% return: upper | lower | 
+
+%% return: upper | lower |
 %%         case_less (one variant char e.g. numbers, punctuation ...)
 %% note  : ï and y with double dots are technicaly a lower case only letters
 %%         but can in this case checker context be considred to be case less
@@ -90,7 +91,7 @@ has_case(Char) ->
     [CU] = to_upper([Char]),
     [CL] = to_lower([Char]),
     case {CU == Char, CL == Char} of
-	{true,  true}  -> case_less; 
+	{true,  true}  -> case_less;
 	{true,  false} -> upper;
 	{false, true}  -> lower
 	%% {false, false}    should only happen if to_upper/to_lower is broken
@@ -118,11 +119,11 @@ to_upper(C) when C >= $a, C =< $z ->
     C-($a-$A);
 %% 224 = a grave, 246 = o umlaut
 %% 192 = A grave
-to_upper(C) when C >= 224, C =< 246 -> 
+to_upper(C) when C >= 224, C =< 246 ->
     C-(224 - 192);
 %% 248 = o slash, 254 = thorn
 %% 216 = O slash
-to_upper(C) when C >= 248, C =< 254 -> 
+to_upper(C) when C >= 248, C =< 254 ->
     C-(248 - 216);
 to_upper(C) ->
     C.
@@ -134,11 +135,11 @@ to_lower(C) when C >= $A, C =< $Z ->
     C+($a-$A);
 %% 192 = A grave, 214 = O umlaut
 %% 224 = a grave
-to_lower(C) when C >= 192, C =< 214 -> 
+to_lower(C) when C >= 192, C =< 214 ->
     C+(224 - 192);
 %% 216 = O slash, 222 = THORN
 %% 248 = o slash
-to_lower(C) when C >= 216, C =< 222 -> 
+to_lower(C) when C >= 216, C =< 222 ->
     C+(248 - 216);
 to_lower(C) ->
     C.
