@@ -261,6 +261,11 @@ pt([{call,_,{remote,_,{atom,_,gettext},{atom,_,key2str}},
     ?debug( "++++++ String=<~p>~n",[String]),
     dump(String, L5),
     [H | pt(T, Opts, Func)];
+pt([{call,_,{remote,_,{atom,_,gettext},{atom,_,key2str}},
+    [{string,L5,String},_]} = H | T], Opts, Func) ->
+    ?debug( "++++++ String=<~p>~n",[String]),
+    dump(String, L5),
+    [H | pt(T, Opts, Func)];
 %%% Retrieve module name from parametrized modules
 pt([{attribute,L,module,{Mod,_Params}} | T], Opts, Func) ->
     pt([{attribute,L,module,Mod} | T], Opts, Func);
