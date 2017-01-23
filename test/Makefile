@@ -30,7 +30,7 @@ clean:
 ../ebin/%.beam: %.erl $(INCLUDES) Makefile
 	erlc -pa ../ebin -o ../ebin $(ERLC_FLAGS) +gettext $<
 
-test:
+test: $(EBIN_FILES) pot
 	@erl -pa ../ebin -noshell \
 	  -eval 'gettext_demo:hello_world()' \
 	  -s init stop
