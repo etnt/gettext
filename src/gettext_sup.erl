@@ -54,7 +54,7 @@ start_link(Options) ->
 %%          {error, Reason}
 %%----------------------------------------------------------------------
 init([]) ->
-    init([{gettext:callback_mod(),application:get_all_env()}]);  % just a default that should always work
+    init([gettext:callback_mod()]); %% just a default that should always work
 init([CallBackMod]) ->
     GettextServer = {gettext_server,{gettext_server,start_link,[CallBackMod]},
 	      permanent,5000,worker,[gettext_server]},
