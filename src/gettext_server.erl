@@ -499,11 +499,15 @@ lookup(TableName, Lang, Key) ->
 
 lookup(TableName, Lang, DefaultLang, Key) ->
     try ets:lookup(get(ets_table), ?KEY(Lang, Key)) of
-	[] ->  case string:equal(Lang, DefaultLang) of
-				true -> Key;
-				false -> lookup(TableName, DefaultLang, Key)
-			end;
-	[?ENTRY(_,_,Str)|_] -> Str
+	[] ->
+            %% Lang may be 'undefined' if calling process has not done
+            %% put(gettext_language, Lang).
+            case is_list(Lang) andalso string:equal(Lang, DefaultLang) of
+                true -> Key;
+                false -> lookup(TableName, DefaultLang, Key)
+            end;
+	[?ENTRY(_,_,Str)|_] ->
+            Str
     catch
         _:_ ->
 	    case dets:lookup(TableName, ?KEY(Lang, Key)) of
